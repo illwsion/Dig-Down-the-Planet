@@ -1,15 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://bqj8main0digplanet"]
+[gd_scene load_steps=4 format=3 uid="uid://bqj8main0digplanet"]
 
 [ext_resource type="Script" path="res://scenes/main/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/World.tscn" id="2_world"]
+[ext_resource type="PackedScene" path="res://scenes/player/Drill.tscn" id="3_drill"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 
-[node name="CameraTarget" type="Node2D" parent="."]
+[node name="Drill" parent="." instance=ExtResource("3_drill")]
 position = Vector2(0, 0)
-
-[node name="Camera2D" type="Camera2D" parent="CameraTarget"]
 
 [node name="World" parent="." instance=ExtResource("2_world")]
 

@@ -8,3 +8,5 @@ script = ExtResource("1_chunk")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
 tile_set = ExtResource("2_tileset")
+
+[node name="Colliders" type="Node2D" parent="."]

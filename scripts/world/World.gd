@@ -1,6 +1,6 @@
 extends Node2D
 
-## 1-4: CameraTarget.global_position.y 기준으로 chunk_index_y를 맞춘다. (Main의 CameraTarget 형제)
+## 1-4~2-1: Drill.global_position.y 기준으로 chunk_index_y를 맞춘다. (Main의 Drill 형제)
 
 const CHUNK_SCENE := preload("res://scenes/world/Chunk.tscn")
 const CHUNK_HEIGHT_TILES := 32
@@ -17,7 +17,7 @@ const CHUNK_MARGIN_BELOW := 2
 
 var _chunks: Dictionary = {} ## int chunk_index_y -> Node2D (Chunk)
 
-@onready var _camera_target: Node2D = get_parent().get_node("CameraTarget") as Node2D
+@onready var _focus: Node2D = get_parent().get_node("Drill") as Node2D
 
 
 func _ready() -> void:
@@ -29,9 +29,9 @@ func _process(_delta: float) -> void:
 
 
 func sync_chunks() -> void:
-	if _camera_target == null:
+	if _focus == null:
 		return
-	var cam_y := _camera_target.global_position.y
+	var cam_y := _focus.global_position.y
 	var focus_cy := int(floor(cam_y / float(CHUNK_HEIGHT_PX)))
 	var min_cy: int = maxi(focus_cy - CHUNK_MARGIN_ABOVE, MIN_CHUNK_INDEX_Y)
 	var max_cy := focus_cy + CHUNK_MARGIN_BELOW

@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://digdrillscene01"]
+
+[ext_resource type="Script" path="res://scripts/player/Drill.gd" id="1_drill"]
+[ext_resource type="Texture2D" path="res://assets/drills/drill.png" id="2_drill_tex"]
+
+[node name="Drill" type="CharacterBody2D"]
+z_index = 10
+script = ExtResource("1_drill")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_drill_tex")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+
+[node name="Camera2D" type="Camera2D" parent="."]
