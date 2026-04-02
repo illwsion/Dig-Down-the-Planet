@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://digchunk01scene"]
+
+[ext_resource type="Script" path="res://scripts/world/Chunk.gd" id="1_chunk"]
+[ext_resource type="TileSet" uid="uid://digterraintileset01" path="res://resources/tileset/terrain_tileset.tres" id="2_tileset"]
+
+[node name="Chunk" type="Node2D"]
+script = ExtResource("1_chunk")
+
+[node name="TileMapLayer" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tileset")

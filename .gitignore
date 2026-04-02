@@ -1,3 +1,16 @@
-# Godot 4+ specific ignores
+# Godot 4 generated cache/import data
 .godot/
+
+# Android export/build artifacts
 /android/
+/android/build/
+
+# Mono/.NET generated files (if using C#)
+/.mono/
+*.csproj
+*.sln
+*.user
+*.userprefs
+
+# General temporary files
+*.tmp
