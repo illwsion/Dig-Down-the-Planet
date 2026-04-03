@@ -73,6 +73,26 @@ func has_mineable_tile_in_circle(center_world: Vector2, radius_px: float) -> boo
 	return false
 
 
+func apply_mine_damage_at_world(center_world: Vector2, radius_px: float, damage: float) -> void:
+	## `mine_radius` 원과 겹치는 채굴 가능 셀마다 대미지 1회(3-5).
+	var r2 := radius_px * radius_px
+	var ts := float(TILE_SIZE_PX)
+	for chunk_node in _chunks.values():
+		var chunk: Node2D = chunk_node as Node2D
+		if chunk == null or not chunk.has_method("apply_damage_at_local_if_mineable"):
+			continue
+		var p_local := chunk.to_local(center_world)
+		var min_x := clampi(int(floor((p_local.x - radius_px) / ts)), 0, CHUNK_WIDTH_TILES - 1)
+		var max_x := clampi(int(ceil((p_local.x + radius_px) / ts)) - 1, 0, CHUNK_WIDTH_TILES - 1)
+		var min_y := clampi(int(floor((p_local.y - radius_px) / ts)), 0, CHUNK_HEIGHT_TILES - 1)
+		var max_y := clampi(int(ceil((p_local.y + radius_px) / ts)) - 1, 0, CHUNK_HEIGHT_TILES - 1)
+		for ly in range(min_y, max_y + 1):
+			for lx in range(min_x, max_x + 1):
+				if not _tile_circle_overlap_local(p_local, lx, ly, ts, r2):
+					continue
+				chunk.apply_damage_at_local_if_mineable(Vector2i(lx, ly), damage)
+
+
 func _tile_circle_overlap_local(p_local: Vector2, lx: int, ly: int, tile_size: float, r2: float) -> bool:
 	var left := float(lx) * tile_size
 	var right := left + tile_size

@@ -42,9 +42,14 @@ func _update_hud() -> void:
 	m_fps_label.text = "FPS: %d" % int(Engine.get_frames_per_second())
 	if m_world.has_method("get_active_chunk_summary"):
 		m_chunks_label.text = m_world.get_active_chunk_summary()
-	if m_drill.has_method("get_aim_debug_string") and m_drill.has_method("get_mining_debug_string") and m_drill.has_method("get_status_debug_string"):
-		m_aim_label.text = "%s\n%s\n%s" % [m_drill.get_aim_debug_string(), m_drill.get_status_debug_string(), m_drill.get_mining_debug_string()]
-	elif m_drill.has_method("get_aim_debug_string") and m_drill.has_method("get_mining_debug_string"):
-		m_aim_label.text = "%s\n%s" % [m_drill.get_aim_debug_string(), m_drill.get_mining_debug_string()]
-	elif m_drill.has_method("get_aim_debug_string"):
-		m_aim_label.text = m_drill.get_aim_debug_string()
+	var parts: Array[String] = []
+	if m_drill.has_method("get_aim_debug_string"):
+		parts.append(m_drill.get_aim_debug_string())
+	if m_drill.has_method("get_status_debug_string"):
+		parts.append(m_drill.get_status_debug_string())
+	if m_drill.has_method("get_speed_debug_string"):
+		parts.append(m_drill.get_speed_debug_string())
+	if m_drill.has_method("get_mining_debug_string"):
+		parts.append(m_drill.get_mining_debug_string())
+	if parts.size() > 0:
+		m_aim_label.text = "\n".join(parts)

@@ -170,13 +170,14 @@ MVP 완료 기준: “내려가며 채굴 → 자원이 인벤에 쌓임 → 업
 |------|------|
 | `idle` | `drill_down` 미홀드. 이동·회전·채굴 틱 없음. |
 | `moving` | 홀드 중 + `mine_contact_radius` 안에 채굴 대상 타일 없음 → 전진·회전(2단계 규칙). |
-| `digging` | 홀드 중 + `mine_contact_radius` 안에 채굴 대상 타일 있음 → 전진·회전 정지, 파내기 자세. |
+| `digging` | 홀드 중 + `mine_contact_radius` 안에 채굴 대상 타일 있음. 전진·회전 정지는 3-8에서 연결(그 전에는 이동이 남을 수 있음). |
 
 핵심 규칙 (결정 사항)
 
 - 채굴 틱은 `idle`이 아닐 때만 돈다: 즉 `moving`과 `digging` 둘 다에서 `mine_tick_interval`마다 `mine_radius` 안 후보에 `mine_damage_per_tick`을 적용한다. `idle`에서는 틱 없음.
 - `mine_radius` 후보: tip 기준 원 안의 타일 셀 중, 내구도가 남은 채굴 대상만(빈 셀 스킵).
-- `digging`일 때는 기존처럼 전진·회전을 멈추고, `moving`일 때는 이동하면서도 위 틱 규칙으로 범위 안 타일은 계속 깎인다.
+- `digging`일 때 전진·회전을 멈추는 것은 설계 목표이며, 구현은 3-8에서 연결한다. 그 전까지는 이동이 남아 있어도 3-4~3-7 검증에는 지장 없다.
+- `moving`일 때는 이동하면서도 채굴 틱(3-5)으로 범위 안 타일 HP를 깎을 수 있다.
 - 타일 내구도는 0보다 크면 “살아 있음”. 0 이하가 되면 TileMap 셀 제거 + 해당 타일 충돌 제거 + (선택) 자원 누적.
 
 연료·업그레이드와의 충돌은 이 단계에서 최소만: 연료 0이면 `moving`/`digging` 자체를 막을지는 한 가지로 정한다.
@@ -184,18 +185,29 @@ MVP 완료 기준: “내려가며 채굴 → 자원이 인벤에 쌓임 → 업
 만들 파일(제안)
 
 - `scripts/player/DrillStatus.gd` (enum만) 또는 `Drill.gd` 내부 enum
-- `scripts/world/TileDurability.gd` 또는 `Chunk`에 `Vector2i -> hp` 맵 + 타일 소스별 `max_hp` (상수 테이블)
-- `scripts/mining/MiningSystem.gd` (또는 `Drill`+`Chunk` 콜백으로 시작 후 분리)
-- `resources/items/item_database.tres` 또는 `scripts/items/ItemDef.gd` (최소: `id`, `display_name`, `stack_size_for_mvp`) — 3-8 훅용
+- 블록 종류 데이터 테이블: 예) `scripts/world/BlockDef.gd` (`extends Resource`, `id`, `max_hp` 등) + `resources/world/block_table.tres` 한 개에 행 여러 개(지금은 흙만). 또는 `BlockTable.gd`가 `Array[BlockDef]`를 들고 프리로드.
+- `Chunk`: 로컬 `Vector2i -> int` 현재 HP 딕셔너리. `_fill_tiles` 끝에서 솔리드 셀마다 풀 HP로 전부 채움(아래 3-4 계획).
+- `scripts/mining/MiningSystem.gd` (또는 `Drill`+`World`/`Chunk` 호출로 시작 후 분리)
+- `resources/items/item_database.tres` 또는 `scripts/items/ItemDef.gd` (최소: `id`, `display_name`, `stack_size_for_mvp`) — 3-7 훅용
 - (선택) `scripts/world/TileBreakCoordinator.gd`: TileMap·충돌·내구도 맵 동시 갱신
 
 권장(요약) — 파일을 최소로 시작할 때
 
 - `DrillStatus`: 우선 `Drill.gd` 안의 `enum`. HUD·채굴 쪽에서도 재사용이 커지면 그때 `drill_status.gd` 등으로 분리.
-- 내구도: 우선 `Chunk`에 `Vector2i -> hp` 맵 + 타일/아틀라스별 `max_hp`는 `WorldGenerator` 또는 작은 상수 테이블. `TileDurability.gd` 단독 파일은 로직이 얇기 쉬우니, 커지면 `Chunk` 보조 타입이나 별도 모듈로 빼기.
+- 블록·내구도: 종류별 `max_hp`는 Resource 테이블에만 둔다. `Chunk`는 셀별 현재 HP만 들고, 스폰 시 테이블에서 읽어 전 셀을 한 번에 채운다(지연 초기화 말고 전부 채움).
 - 채굴 틱: 처음엔 `Drill`에서 타이머 후 `World`에 “월드 좌표·반경 기준 대미지” 요청. 틱·후보 수집·청크 경계가 한 파일에 길어지면 `MiningSystem.gd` 분리.
 - `TileBreakCoordinator`: 3단계 초반은 생략. `Chunk`에 `apply_damage` / `break_cell`처럼 “타일맵 + 충돌 + HP 맵”을 한 번에 갱신하는 진입점만 둔다. 여러 청크·호출 경로가 꼬이면 중앙 코디네이터 검토.
-- 3-8 자원 훅: 카운터만이면 `GameState` 변수 + 로그로도 충분. 종류별 아이템이 필요해질 때 `ItemDef` 리소스·`item_database.tres` 도입.
+- 3-7 자원 훅: 카운터만이면 `GameState` 변수 + 로그로도 충분. 종류별 아이템이 필요해질 때 `ItemDef` 리소스·`item_database.tres` 도입.
+
+블록 종류·내구도 (3-4) — 구현 계획
+
+- 데이터 테이블: Godot `Resource`로 블록 한 줄을 표현한다. 예: `BlockDef`에 `id` (StringName), `max_hp` (int), 필요 시 `display_name`. 여러 블록을 모은 `BlockTable` 리소스에 `entries: Array[BlockDef]` 또는 `block_table.tres` 하나에 여러 서브리소스로 흙·돌 행을 넣는다. MVP는 흙 한 행만 두고 `max_hp`만 조정해도 된다.
+- 셀 → 블록 종류: `Chunk` 또는 공용 헬퍼에서 `block_id_for_cell(local: Vector2i) -> StringName` (또는 enum). 지금은 타일이 전부 흙이면 상수로 `dirt` 반환. 돌을 넣을 때는 `TileMapLayer.get_cell_tile_data`의 아틀라스/소스로 분기만 추가한다.
+- HP 저장: `m_cell_hp: Dictionary` 키 `Vector2i`, 값 현재 HP. `_fill_tiles`에서 타일을 깐 뒤, 솔리드한 `(lx, ly)`마다 `m_cell_hp[Vector2i(lx, ly)] = block_table.max_hp_for(block_id_for_cell(...))`로 전부 채운다. 빈 셀은 딕셔너리에 넣지 않거나 0으로 두되, 조회 규칙은 한 가지로 고정한다.
+- API 예: `get_cell_hp`, `set_cell_hp` 또는 `apply_damage(local, amount)`. 파괴(3-7) 시 타일 제거와 함께 해당 키 삭제.
+- `World.has_mineable_tile_in_circle` / `Chunk.has_mineable_tile_at`는 “타일이 있고 현재 HP > 0”으로 맞춘다(3-3 `digging` 판정과 일치).
+
+하위 단계 (3-x) — 한 번에 하기 버거우면 3-1→3-2→… 순으로 끊어서 검증.
 
 하위 단계 (3-x) — 한 번에 하기 버거우면 3-1→3-2→… 순으로 끊어서 검증.
 
@@ -204,25 +216,31 @@ MVP 완료 기준: “내려가며 채굴 → 자원이 인벤에 쌓임 → 업
 | 3-1 | 상수·기준점: `mine_radius`, `mine_contact_radius`, `mine_tick_interval`, `mine_damage_per_tick`를 `Drill`에 두고, 모든 원·거리 계산의 기준은 tip 월드 좌표로 고정. | 인스펙터에서 숫자 바꿀 때 의미가 바로 보임. |
 | 3-2 | 디버그 시각화: tip 기준으로 채굴 원·접촉 원을 임시로 그린다(`draw` 또는 전용 `Node2D`). 색을 다르게, `debug_draw_mine_radii` 같은 플래그로 끄기 쉽게. | 두 반경 크기·겹침이 한눈에 들어옴. |
 | 3-3 | `DrillStatus` 갱신: 매 틱 또는 `_physics_process`에서 `idle`/`moving`/`digging` 전환. `digging` 판정은 `mine_contact_radius` 안에 내구도>0 타일이 있는지(후보 열거 후 존재 여부). HUD에 상태 문자열을 찍으면 디버깅에 유리. | 홀드 on/off·바위 접촉 시 상태가 기대대로. |
-| 3-4 | 이동 로직과 상태 연결: `digging`이면 전진·회전 입력을 막고, `moving`이면 2단계 이동 유지. | 멈춰 팔 때와 빈 공간 질주할 때 구분됨. |
-| 3-5 | 타일 내구도 저장: 청크(또는 월드)가 셀별 현재 HP를 들고, 타일 종류(또는 단일 흙)에 `max_hp`를 둔다. 새로 깔린 타일은 풀 HP. | 수치만 변경되고 좌표는 유지됨. |
-| 3-6 | 원형 후보 + 틱 대미지: `mine_tick_interval` 타이머로, 상태가 `moving` 또는 `digging`일 때만 틱을 돌린다. 매 틱 `mine_radius` 안 타일에 `mine_damage_per_tick` 적용(타일 중심 또는 셀 코너 기준 거리는 구현에서 하나로 고정). `idle`에서는 틱 없음. | 이동 중·정지 파기 모두 HP가 줄어듦. |
-| 3-7 | 깨짐 표현: HP 비율(또는 단계 인덱스)에 따라 TileMap atlas 좌표·모듈레이션·오버레이로 “점점 깨짐”. MVP는 2~3 단계만 있어도 됨. | 맷돌 전에 균열이 보임. |
-| 3-8 | 파괴 처리: HP≤0이면 셀 제거, StaticBody 제거, 내구도 맵에서 삭제. 이어서 `GameState`에 파괴 카운터/로그(4단계 인벤 전 임시). | 통과·충돌 제거·카운터 증가가 한 세트로 동작. |
+| 3-4 | 타일 내구도 저장: `BlockDef` 등 Resource 테이블로 종류별 `max_hp`를 정의. `Chunk`가 `Vector2i -> hp` 맵을 들고, 스폰 시 솔리드 셀마다 테이블에서 읽어 전부 풀 HP로 채운다. 지금은 흙만, 나중에 돌은 같은 테이블에 행 추가 + `block_id_for_cell` 분기. | 인스펙터에서 흙 `max_hp` 변경 시 스폰 HP가 따라감. |
+| 3-5 | 원형 후보 + 틱 대미지: `mine_tick_interval` 타이머로, 상태가 `moving` 또는 `digging`일 때만 틱을 돌린다. 매 틱 `mine_radius` 안 타일에 `mine_damage_per_tick` 적용(타일 중심 또는 셀 코너 기준 거리는 구현에서 하나로 고정). `idle`에서는 틱 없음. | 이동 중·정지 파기 모두 HP가 줄어듦. |
+| 3-6 | 깨짐 표현: HP 비율(또는 단계 인덱스)에 따라 TileMap atlas 좌표·모듈레이션·오버레이로 “점점 깨짐”. MVP는 2~3 단계만 있어도 됨. | 맷돌 전에 균열이 보임. |
+| 3-7 | 파괴 처리: HP≤0이면 셀 제거, StaticBody 제거, 내구도 맵에서 삭제. 이어서 `GameState`에 파괴 카운터/로그(4단계 인벤 전 임시). | 통과·충돌 제거·카운터 증가가 한 세트로 동작. |
+| 3-8 | 이동 로직과 상태 연결: `digging`이면 전진·회전 입력을 막고, `moving`이면 2단계 이동 유지. 채굴·파괴 루프(3-5~3-7)가 돈 뒤 마지막에 붙이면 조정하기 쉽다. | 멈춰 팔 때와 빈 공간 질주할 때 구분됨. |
 
-구현 순서 권장
+구현 순서 권장 (단계 3, 문서 번호 기준)
 
-1. 3-1 → 3-2로 반경이 맞는지 먼저 확정한 뒤, 3-3 → 3-4로 상태·이동을 붙인다.
-2. 3-5로 데이터가 있어야 3-6에서 대미지가 의미 있고, 3-7은 3-6과 같이 가도 되고 HP만 먼저 줄이고 시각은 나중에 넣어도 된다.
-3. 3-8은 마지막에 묶어서 “파괴 한 번에 일어나는 일” 목록으로 점검.
+1. 3-1 → 3-2: 반경 상수·tip 기준·디버그 원으로 크기 확정.
+2. 3-3: `DrillStatus`만 HUD로 검증.
+3. 3-4: 블록 Resource 테이블 + `Chunk`에 스폰 시 전 셀 HP 채움 + `block_id_for_cell`(지금은 흙 고정) + mineable 판정을 HP>0과 맞춤.
+4. 3-5: `mine_tick_interval`·원형 후보·`mine_damage_per_tick`으로 HP 감소.
+5. 3-6: HP 비율(또는 단계)에 따른 타일 시각.
+6. 3-7: HP≤0 시 타일·충돌·HP 맵 정리 + `GameState` 등 임시 자원 훅.
+7. 3-8: `digging`일 때 전진·회전 정지 연결.
 
 체크리스트
 
 - [ ] (3-1~3-2) tip 기준으로 `mine_radius` / `mine_contact_radius`가 디버그로 확인됨
-- [ ] (3-3~3-4) `idle` / `moving` / `digging` 전환과 이동 정지가 맞음
-- [ ] (3-5~3-6) `moving`·`digging`에서만 채굴 틱이 돌고 HP가 감소함(`idle`에서는 안 깎임)
-- [ ] (3-7) HP 감소에 따라 타일 외형이 단계적으로 변함
-- [ ] (3-8) HP 0이면 타일·충돌 제거 + (임시) 자원 누적
+- [ ] (3-3) `idle` / `moving` / `digging` 전환(HUD). 접촉 판정은 HP 반영 후(3-4) 최종 확인
+- [ ] (3-4) 블록 테이블 + 청크 스폰 시 HP 전부 채움 + mineable이 HP>0과 일치
+- [ ] (3-5) `moving`·`digging`에서만 채굴 틱, HP 감소(`idle`에서는 틱 없음)
+- [ ] (3-6) HP에 따른 깨짐 표현
+- [ ] (3-7) HP 0이면 타일·충돌 제거 + (임시) 자원 누적
+- [ ] (3-8) `digging`에서 이동·회전 정지, `moving`에서는 2단계 이동 유지
 
 ---
 
@@ -291,7 +309,7 @@ MVP 완료 기준: “내려가며 채굴 → 자원이 인벤에 쌓임 → 업
 1. `Main` + 입력 맵  
 2. 단계 1 하위: 1-1 단일 청크 → 1-2 `World` + 청크 2개·(선택) 카메라 패닝/깊이 표시 → 1-3 `WorldGenerator` + 동적 청크 → 1-4 `CameraTarget` 추적 → 1-5 디버그·점검  
 3. 단계 2 하위: 2-1 Drill 씬·Main 배치 → 2-2 입력·의도 방향·무충돌 이동 → 2-3 TileMap 충돌·`move_and_slide` → 2-4 World·HUD 드릴 기준 → 2-5 스냅·동시 입력·경계 테스트  
-4. 단계 3 하위: 반경·디버그 원 → `DrillStatus`·이동 연동 → 타일 내구도 → 틱 대미지 → 깨짐 표현 → 파괴·자원 훅  
+4. 단계 3 하위: 반경·디버그 원 → `DrillStatus` → 블록 테이블·청크 HP 풀 채움 → 틱 대미지 → 깨짐 표현 → 파괴·자원 훅 → 말미에 이동·`digging` 정지(3-8)  
 5. `Inventory` + 인벤 UI  
 6. `Upgrade` UI + 비용 차감  
 7. 디버그/일시정지/밸런스 스킵 없이 최소 점검  
