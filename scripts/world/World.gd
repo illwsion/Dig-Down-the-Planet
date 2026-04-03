@@ -3,6 +3,7 @@ extends Node2D
 ## 1-4~2-1: Drill.global_position.y 기준으로 chunk_index_y를 맞춘다. (Main의 Drill 형제)
 
 const CHUNK_SCENE := preload("res://scenes/world/Chunk.tscn")
+const CHUNK_WIDTH_TILES := 32
 const CHUNK_HEIGHT_TILES := 32
 const TILE_SIZE_PX := 32
 const CHUNK_HEIGHT_PX := CHUNK_HEIGHT_TILES * TILE_SIZE_PX
@@ -48,6 +49,38 @@ func sync_chunks() -> void:
 		var node: Node = _chunks[cy]
 		_chunks.erase(cy)
 		node.queue_free()
+
+
+func has_mineable_tile_in_circle(center_world: Vector2, radius_px: float) -> bool:
+	## tip 기준 원 안에 “타일이 있는 셀”이 하나라도 있으면 true. 타일 AABB와 원 겹침 기준.
+	var r2 := radius_px * radius_px
+	var ts := float(TILE_SIZE_PX)
+	for chunk_node in _chunks.values():
+		var chunk: Node2D = chunk_node as Node2D
+		if chunk == null or not chunk.has_method("has_mineable_tile_at"):
+			continue
+		var p_local := chunk.to_local(center_world)
+		var min_x := clampi(int(floor((p_local.x - radius_px) / ts)), 0, CHUNK_WIDTH_TILES - 1)
+		var max_x := clampi(int(ceil((p_local.x + radius_px) / ts)) - 1, 0, CHUNK_WIDTH_TILES - 1)
+		var min_y := clampi(int(floor((p_local.y - radius_px) / ts)), 0, CHUNK_HEIGHT_TILES - 1)
+		var max_y := clampi(int(ceil((p_local.y + radius_px) / ts)) - 1, 0, CHUNK_HEIGHT_TILES - 1)
+		for ly in range(min_y, max_y + 1):
+			for lx in range(min_x, max_x + 1):
+				if not _tile_circle_overlap_local(p_local, lx, ly, ts, r2):
+					continue
+				if chunk.has_mineable_tile_at(Vector2i(lx, ly)):
+					return true
+	return false
+
+
+func _tile_circle_overlap_local(p_local: Vector2, lx: int, ly: int, tile_size: float, r2: float) -> bool:
+	var left := float(lx) * tile_size
+	var right := left + tile_size
+	var top := float(ly) * tile_size
+	var bottom := top + tile_size
+	var qx := clampf(p_local.x, left, right)
+	var qy := clampf(p_local.y, top, bottom)
+	return p_local.distance_squared_to(Vector2(qx, qy)) <= r2
 
 
 func get_active_chunk_summary() -> String:

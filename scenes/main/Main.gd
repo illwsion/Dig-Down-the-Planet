@@ -12,6 +12,7 @@ var m_move_speed_px: float = DEFAULT_MOVE_SPEED_PX
 @onready var m_depth_label: Label = $UILayer/DepthLabel
 @onready var m_chunks_label: Label = $UILayer/ChunksLabel
 @onready var m_fps_label: Label = $UILayer/FpsLabel
+@onready var m_aim_label: Label = $UILayer/AimLabel
 @onready var m_speed_slider: HSlider = $UILayer/SpeedPanel/SpeedSlider
 @onready var m_speed_value_label: Label = $UILayer/SpeedPanel/SpeedValueLabel
 
@@ -41,3 +42,9 @@ func _update_hud() -> void:
 	m_fps_label.text = "FPS: %d" % int(Engine.get_frames_per_second())
 	if m_world.has_method("get_active_chunk_summary"):
 		m_chunks_label.text = m_world.get_active_chunk_summary()
+	if m_drill.has_method("get_aim_debug_string") and m_drill.has_method("get_mining_debug_string") and m_drill.has_method("get_status_debug_string"):
+		m_aim_label.text = "%s\n%s\n%s" % [m_drill.get_aim_debug_string(), m_drill.get_status_debug_string(), m_drill.get_mining_debug_string()]
+	elif m_drill.has_method("get_aim_debug_string") and m_drill.has_method("get_mining_debug_string"):
+		m_aim_label.text = "%s\n%s" % [m_drill.get_aim_debug_string(), m_drill.get_mining_debug_string()]
+	elif m_drill.has_method("get_aim_debug_string"):
+		m_aim_label.text = m_drill.get_aim_debug_string()

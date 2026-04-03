@@ -32,6 +32,15 @@ offset_top = 64.0
 theme_override_font_sizes/font_size = 16
 text = "FPS: —"
 
+[node name="AimLabel" type="Label" parent="UILayer"]
+offset_left = 12.0
+offset_top = 88.0
+offset_right = 520.0
+offset_bottom = 168.0
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 3
+text = "조준각: —"
+
 [node name="SpeedPanel" type="VBoxContainer" parent="UILayer"]
 layout_mode = 1
 anchors_preset = 1

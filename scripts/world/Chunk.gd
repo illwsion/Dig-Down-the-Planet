@@ -18,6 +18,11 @@ func _ready() -> void:
 	_fill_tiles()
 
 
+func has_mineable_tile_at(local_cell: Vector2i) -> bool:
+	## 타일이 있는 셀만 채굴 대상(3-5에서 내구도>0로 좁힐 예정).
+	return m_tile_layer.get_cell_tile_data(local_cell) != null
+
+
 func _fill_tiles() -> void:
 	# 청크가 다시 생성될 경우를 대비해 기존 충돌을 정리
 	for child in m_colliders_root.get_children():
