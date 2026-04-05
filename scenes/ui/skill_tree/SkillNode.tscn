@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://skill_node"]
+
+[ext_resource type="Script" path="res://scripts/ui/skill_tree/SkillNode.gd" id="1_skillnode"]
+
+[node name="SkillNode" type="Control"]
+custom_minimum_size = Vector2(64, 64)
+size = Vector2(64, 64)
+script = ExtResource("1_skillnode")
+
+[node name="IconButton" type="TextureButton" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 64.0
+offset_bottom = 64.0
+ignore_texture_size = true
+stretch_mode = 0

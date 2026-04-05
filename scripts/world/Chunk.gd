@@ -26,7 +26,7 @@ func _ready() -> void:
 	_fill_tiles()
 
 
-func block_id_for_cell(local_cell: Vector2i) -> StringName:
+func block_id_for_cell(_local_cell: Vector2i) -> StringName:
 	## 나중에 아틀라스/소스로 돌·흙 분기. MVP는 흙만.
 	return &"dirt"
 

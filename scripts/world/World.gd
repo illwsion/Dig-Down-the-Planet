@@ -7,7 +7,7 @@ const CHUNK_WIDTH_TILES := 32
 const CHUNK_HEIGHT_TILES := 32
 const TILE_SIZE_PX := 32
 const CHUNK_HEIGHT_PX := CHUNK_HEIGHT_TILES * TILE_SIZE_PX
-const WORLD_ORIGIN_X := -(32 * TILE_SIZE_PX) / 2
+const WORLD_ORIGIN_X := -(32 * TILE_SIZE_PX) / 2.0
 
 ## 땅(0m)은 월드 픽셀 y=0부터. 그 위(음수 y 구간)에는 청크를 두지 않음.
 const MIN_CHUNK_INDEX_Y := 0

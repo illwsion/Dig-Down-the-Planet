@@ -1,0 +1,60 @@
+[gd_scene load_steps=2 format=3 uid="uid://skill_tooltip"]
+
+[ext_resource type="Script" path="res://scripts/ui/skill_tree/SkillTooltip.gd" id="1_skilltooltip"]
+
+[node name="SkillTooltip" type="PanelContainer"]
+visible = false
+custom_minimum_size = Vector2(240, 0)
+script = ExtResource("1_skilltooltip")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="HeaderRow" type="HBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="MarginContainer/VBox/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "스킬 이름"
+
+[node name="LevelLabel" type="Label" parent="MarginContainer/VBox/HeaderRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "0 / 1"
+
+[node name="DescLabel" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 3
+text = "설명"
+
+[node name="SeparatorCost" type="HSeparator" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="CostLabel" type="Label" parent="MarginContainer/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "비용: 없음"
+
+[node name="SeparatorEffects" type="HSeparator" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="EffectsBox" type="VBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MaxLevelLabel" type="Label" parent="MarginContainer/VBox"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "최대 레벨"

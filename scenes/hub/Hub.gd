@@ -4,6 +4,7 @@ extends Node2D
 @onready var m_skill_tree_button: Button = $UILayer/SkillTreeButton
 @onready var m_skill_tree_panel: PanelContainer = $UILayer/SkillTreePanel
 @onready var m_close_button: Button = $UILayer/SkillTreePanel/VBox/HeaderBar/CloseButton
+@onready var m_skill_tree_view = $UILayer/SkillTreePanel/VBox/SkillTreeView
 
 
 func _ready() -> void:
@@ -18,6 +19,8 @@ func _on_start_button_pressed() -> void:
 
 func _on_skill_tree_button_pressed() -> void:
 	m_skill_tree_panel.visible = true
+	# visible = true 이후 레이아웃 계산이 끝난 다음 프레임에 refresh 호출
+	m_skill_tree_view.call_deferred("refresh")
 
 
 func _on_close_button_pressed() -> void:

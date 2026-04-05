@@ -182,18 +182,20 @@ prestige(환생) 시스템 또는 디버그 목적으로 리셋 기능이 필요
 업그레이드 시 변화하는 수치를 `현재값 → 다음값` 형식으로 표시한다.
 
 ```
-채굴 대미지   1 → 2
-채굴 반경     20 → 24
+채굴 대미지   9 → 10
+채굴 반경     28 → 32
 ```
 
-- 현재값: `기본값 + (value_per_level × current_level)`
-- 다음값: `기본값 + (value_per_level × (current_level + 1))`
+- 현재값: `StatSystem.get_final(stat_id)` — 현재 모든 스킬 효과가 적용된 최종 수치
+- 다음값: `StatSystem.get_final(stat_id) + value_per_level` — 이 스킬을 한 레벨 더 올렸을 때의 최종 수치
 - 스킬이 max_level이면 "최대 레벨" 메시지를 표시하고 수치 변화란은 숨김
 
 ### 미습득 스킬의 툴팁 (레벨 0인 경우)
 
+현재값은 다른 스킬들의 효과만 반영된 최종 수치이고, 다음값은 거기에 이 스킬의 1레벨 효과를 더한 값이다.
+
 ```
-채굴 대미지   1 → 2      ← 현재값은 기본값 그대로, 다음값은 1레벨 적용값
+채굴 대미지   5 → 6      ← 현재값은 다른 스킬들의 합산값, 다음값은 +value_per_level
 ```
 
 ---
@@ -278,7 +280,195 @@ apply_damage(StatSystem.get_final("mine_damage_per_tick"))
 
 ---
 
-## 12. 미결 사항 (prestige 설계 시 결정)
+## 12. 스킬트리 UI 구현 계획
+
+### 씬 노드 구조
+
+```
+SkillTreePanel (PanelContainer) ← Hub.tscn에 이미 존재
+└── VBox
+    ├── HeaderBar (HBoxContainer)
+    │   ├── PanelTitle (Label)
+    │   └── CloseButton (Button)
+    └── SkillTreeView (Control)       ← 스크롤/줌 입력을 받는 컨테이너
+        ├── Canvas (Node2D)           ← 이 노드를 이동/스케일해서 스크롤/줌 구현
+        │   ├── ConnectionsLayer (Node2D)  ← 연결선만 여기서 _draw
+        │   └── NodesLayer (Control)       ← 스킬 노드 아이콘들이 여기에 배치
+        └── Tooltip (PanelContainer)       ← 마우스를 따라다니는 팝업. 기본 hidden
+```
+
+### 생성할 파일
+
+| 파일 | 역할 |
+|------|------|
+| `scenes/ui/skill_tree/SkillTreeView.tscn + .gd` | 스크롤/줌 입력 처리, 스킬 노드 생성, 연결선 갱신 |
+| `scenes/ui/skill_tree/SkillNode.tscn + .gd` | 아이콘 버튼 1개. hover/click 이벤트 처리 |
+| `scenes/ui/skill_tree/SkillTooltip.tscn + .gd` | 팝업 창 UI. 외부에서 데이터를 주입받아 표시 |
+
+### SkillTreeView — 초기화 흐름
+
+1. `_ready()`에서 `SkillDatabase.load_all()`로 전체 `SkillDef` 배열 로드
+2. `GameState.visible_skills`를 읽어 현재 표시할 스킬 id 목록 확인
+3. 표시 대상 스킬마다 `SkillNode` 인스턴스를 생성해 `NodesLayer`에 추가
+   - 위치는 `SkillDef.position` 그대로 사용
+4. `ConnectionsLayer.queue_redraw()` 호출해 연결선 그림
+
+### SkillNode — 아이콘 노드
+
+구성:
+- `TextureButton` (아이콘 이미지)
+- 레벨 표시용 `Label` (현재레벨/최대레벨, 아이콘 하단)
+
+재화 상태에 따른 아이콘 색조:
+
+| 상태 | 색조 |
+|------|------|
+| 업그레이드에 필요한 재화 부족 | 붉은 계열 |
+| 업그레이드에 충분한 재화 있음 | 초록 계열 |
+| 최대 레벨 | 회색 |
+
+이벤트:
+- `mouse_entered` → `Tooltip.show_for(skill_def, current_level)` 호출
+- `mouse_exited` → `Tooltip.hide()` 호출
+- `pressed` → 구매 시도 (비용 확인 → 차감 → 레벨업 → 후속 스킬 공개 갱신)
+
+### ConnectionsLayer — 연결선
+
+`_draw()`에서 `visible_skills`에 있는 스킬들을 순회:
+- 각 스킬의 `prerequisites` 목록을 확인
+- 선행 스킬도 `visible_skills`에 있으면 두 노드의 `position`을 이어 `draw_line` 호출
+- 선 색상: 선행 스킬이 1레벨 이상 습득됐으면 밝은 색, 미습득이면 회색
+
+### SkillTooltip — 팝업 창
+
+마우스를 올린 스킬의 데이터를 받아 아래 내용을 표시:
+
+```
+[ 드릴 세기 업그레이드 ]         2 / 5 레벨
+
+  드릴의 채굴 대미지를 높인다.
+
+  비용: $3
+
+  채굴 대미지   9 → 10
+```
+
+- 현재값: `StatSystem.get_final(stat_id)` (모든 스킬 포함 최종 수치)
+- 다음값: `StatSystem.get_final(stat_id) + value_per_level`
+- 최대 레벨이면 비용란과 스탯 변화란을 숨기고 "최대 레벨" 표시
+- 위치: 마우스 커서 우측 하단에 붙되, 화면 밖으로 넘어가면 반대쪽으로 반전
+
+### SkillTreeView — 스크롤/줌 입력
+
+`_gui_input(event)` 에서 처리:
+- 마우스 드래그 (좌클릭 홀드 + `InputEventMouseMotion`): `Canvas.position += event.relative`
+- 마우스 휠 (`InputEventMouseButton` WHEEL_UP/DOWN): `Canvas.scale *= 1.1` or `0.9`
+  - 줌 기준점은 마우스 커서 위치 (커서 아래 지점이 고정되도록)
+  - 스케일 범위 제한: 0.3 ~ 2.0
+
+### 스킬 구매 후 트리 갱신 흐름
+
+```
+구매 버튼 클릭
+    │
+    ▼
+비용 충족 여부 확인 (GameState 자원 조회)
+    │
+    ├── 부족 → 툴팁에 "재료 부족" 표시 후 종료
+    │
+    └── 충족 → 자원 차감
+                │
+                ▼
+           GameState.learned_skills[id] += 1
+                │
+                ▼
+           레벨이 1이 됐으면 skill.unlocks 순회
+           → 각 후속 스킬의 prerequisites AND 조건 확인
+           → 충족된 스킬을 GameState.visible_skills에 추가
+                │
+                ▼
+           SkillTreeView.refresh()
+           → 새로 공개된 노드 인스턴스 생성 + ConnectionsLayer 갱신
+```
+
+### 구현 순서
+
+각 단계는 수정 파일이 1~2개를 넘지 않도록 쪼갰다.
+
+#### 1단계 — GameState 스킬 상태 변수 추가
+수정 파일: `autoload/GameState.gd`
+- `learned_skills: Dictionary` (`{ 스킬id: 현재레벨 }`) 변수 추가
+- `visible_skills: Array[StringName]` 변수 추가
+- `_ready()`에서 루트 스킬 id를 `visible_skills`에 초기값으로 넣기
+- 검증: 게임 실행 후 `print(GameState.visible_skills)`로 루트 스킬이 보이는지 확인
+
+#### 2단계 — SkillNode 씬 뼈대 생성
+수정 파일: `scenes/ui/skill_tree/SkillNode.tscn`만 (스크립트 없음)
+- `TextureButton` + 하단 `Label`(레벨 표시)로 구성된 씬 생성
+- 스크립트 미연결, 레이아웃만 잡기
+- 검증: 씬을 에디터에서 열어 노드 구조와 크기 확인
+
+#### 3단계 — SkillNode 스크립트 작성
+수정 파일: `scripts/ui/skill_tree/SkillNode.gd`만
+- `setup(skill_def: SkillDef, current_level: int)` 함수 작성
+  - `SkillDef.position`으로 노드 위치 설정
+  - 레벨 라벨 텍스트 갱신 (`current_level / max_level`)
+- 이벤트(hover, click) 없이 배치 로직만
+- 검증: 씬에 연결 후 인스펙터에서 수동으로 `setup` 호출해 위치 확인
+
+#### 4단계 — SkillTreeView 씬 뼈대 생성
+수정 파일: `scenes/ui/skill_tree/SkillTreeView.tscn`만 (스크립트 없음)
+- `Canvas(Node2D)` → `ConnectionsLayer(Node2D)` + `NodesLayer(Control)` 구조 생성
+- 스크립트 미연결
+- 검증: 씬을 에디터에서 열어 노드 계층 확인
+
+#### 5단계 — SkillTreeView 로드 로직 작성
+수정 파일: `scripts/ui/skill_tree/SkillTreeView.gd`만
+- `_ready()`에서 `SkillDatabase.load_all()` 호출
+- `GameState.visible_skills`에 있는 스킬만 `SkillNode` 인스턴스 생성 후 `NodesLayer`에 추가
+- 연결선·스크롤·툴팁 없이 노드 배치만
+- 검증: `print`로 로드된 스킬 수 출력, 화면에 노드가 올바른 위치에 표시되는지 확인
+
+#### 6단계 — SkillTreeView를 Hub에 연결
+수정 파일: `scenes/hub/Hub.tscn`, `scenes/hub/Hub.gd`
+- `SkillTreePanel` 안의 `ContentLabel` 자리에 `SkillTreeView` 인스턴스 삽입
+- `Hub.gd`에서 패널 열 때 `SkillTreeView.refresh()` 호출
+- 검증: 거점 씬에서 스킬트리 버튼 클릭 시 노드가 보이는지 확인
+
+#### 7단계 — ConnectionsLayer 연결선
+수정 파일: `scripts/ui/skill_tree/SkillTreeView.gd`만 (또는 별도 `SkillTreeLines.gd`)
+- `ConnectionsLayer._draw()`에서 visible 스킬들의 prerequisites 기반으로 선 그리기
+- 검증: 선행-후속 스킬 사이에 선이 표시되는지 확인
+
+#### 8단계 — 스크롤/줌 입력
+수정 파일: `scripts/ui/skill_tree/SkillTreeView.gd`만
+- `_gui_input()`에서 드래그(Canvas.position) + 휠(Canvas.scale) 처리
+- 줌 범위 제한 (0.3 ~ 2.0)
+- 검증: 마우스로 드래그/줌이 동작하는지 확인
+
+#### 9단계 — SkillTooltip 씬 + 스크립트
+수정 파일: `scenes/ui/skill_tree/SkillTooltip.tscn`, `scripts/ui/skill_tree/SkillTooltip.gd`
+- 팝업 UI 레이아웃 구성
+- `show_for(skill_def, current_level)` 함수: 이름/레벨/설명/비용/스탯변화 갱신
+- 검증: 수동으로 `show_for` 호출해 데이터가 올바르게 표시되는지 확인
+
+#### 10단계 — SkillNode에 hover 이벤트 연결
+수정 파일: `scripts/ui/skill_tree/SkillNode.gd`만
+- `mouse_entered` → `Tooltip.show_for(...)` 호출
+- `mouse_exited` → `Tooltip.hide()` 호출
+- 아이콘 색조 적용 (재화 부족: 붉은색 / 충분: 초록색 / 최대레벨: 회색)
+- 검증: 노드에 마우스를 올렸을 때 툴팁이 올바른 위치에 표시되는지 확인
+
+#### 11단계 — 스킬 구매 로직
+수정 파일: `scripts/ui/skill_tree/SkillNode.gd`, `autoload/GameState.gd`
+- `pressed` 이벤트에서 비용 확인 → 자원 차감 → `learned_skills` 갱신
+- 레벨 1 달성 시 `unlocks` 순회 → prerequisites AND 조건 확인 → `visible_skills` 갱신
+- `SkillTreeView.refresh()` 호출
+- 검증: 스킬 구매 후 레벨 증가, 후속 스킬 노드가 새로 나타나는지 확인
+
+---
+
+## 13. 미결 사항 (prestige 설계 시 결정)
 
 - [ ] prestige 리셋 범위 확정: 스킬 + 자원 + 인벤토리 포함 예정이나, prestige 시스템 설계 시 함께 결정
 

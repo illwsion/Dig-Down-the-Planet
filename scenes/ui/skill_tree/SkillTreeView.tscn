@@ -1,0 +1,21 @@
+[gd_scene load_steps=4 format=3 uid="uid://skill_tree_view"]
+
+[ext_resource type="Script" path="res://scripts/ui/skill_tree/SkillTreeView.gd" id="1_skilltreeview"]
+[ext_resource type="PackedScene" path="res://scenes/ui/skill_tree/SkillTooltip.tscn" id="2_skilltooltip"]
+[ext_resource type="Script" path="res://scripts/ui/skill_tree/SkillTreeLines.gd" id="3_skilltreelines"]
+
+[node name="SkillTreeView" type="Control"]
+script = ExtResource("1_skilltreeview")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+clip_contents = true
+
+[node name="Canvas" type="Node2D" parent="."]
+
+[node name="ConnectionsLayer" type="Node2D" parent="Canvas"]
+script = ExtResource("3_skilltreelines")
+
+[node name="NodesLayer" type="Control" parent="Canvas"]
+
+[node name="Tooltip" parent="." instance=ExtResource("2_skilltooltip")]
