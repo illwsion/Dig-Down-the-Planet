@@ -1,0 +1,12 @@
+[remap]
+
+importer="keep"
+type="Object"
+uid="uid://d3ii6bschwj7v"
+
+[deps]
+
+source_file="res://resources/skills/skill_database.csv"
+dest_files=[]
+
+[params]

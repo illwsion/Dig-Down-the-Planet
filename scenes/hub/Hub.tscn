@@ -1,0 +1,96 @@
+[gd_scene load_steps=2 format=3 uid="uid://hub_scene"]
+
+[ext_resource type="Script" path="res://scenes/hub/Hub.gd" id="1_hub"]
+
+[node name="Hub" type="Node2D"]
+script = ExtResource("1_hub")
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+
+[node name="TitleLabel" type="Label" parent="UILayer"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -100.0
+offset_top = 40.0
+offset_right = 100.0
+offset_bottom = 80.0
+grow_horizontal = 3
+theme_override_font_sizes/font_size = 32
+text = "거점"
+horizontal_alignment = 1
+
+[node name="StartButton" type="Button" parent="UILayer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = -24.0
+offset_right = 80.0
+offset_bottom = 24.0
+grow_horizontal = 3
+grow_vertical = 3
+theme_override_font_sizes/font_size = 20
+text = "출발"
+
+[node name="SkillTreeButton" type="Button" parent="UILayer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = 40.0
+offset_right = 80.0
+offset_bottom = 88.0
+grow_horizontal = 3
+grow_vertical = 3
+theme_override_font_sizes/font_size = 20
+text = "스킬트리"
+
+[node name="SkillTreePanel" type="PanelContainer" parent="UILayer"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -40.0
+grow_horizontal = 3
+grow_vertical = 3
+
+[node name="VBox" type="VBoxContainer" parent="UILayer/SkillTreePanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HeaderBar" type="HBoxContainer" parent="UILayer/SkillTreePanel/VBox"]
+layout_mode = 2
+
+[node name="PanelTitle" type="Label" parent="UILayer/SkillTreePanel/VBox/HeaderBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "스킬트리"
+
+[node name="CloseButton" type="Button" parent="UILayer/SkillTreePanel/VBox/HeaderBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "닫기"
+
+[node name="ContentLabel" type="Label" parent="UILayer/SkillTreePanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "( 스킬트리 구현 예정 )"
+horizontal_alignment = 1
+vertical_alignment = 1

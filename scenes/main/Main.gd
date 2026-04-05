@@ -15,6 +15,7 @@ var m_move_speed_px: float = DEFAULT_MOVE_SPEED_PX
 @onready var m_aim_label: Label = $UILayer/AimLabel
 @onready var m_speed_slider: HSlider = $UILayer/SpeedPanel/SpeedSlider
 @onready var m_speed_value_label: Label = $UILayer/SpeedPanel/SpeedValueLabel
+@onready var m_return_button: Button = $UILayer/ReturnButton
 
 
 func _ready() -> void:
@@ -23,12 +24,17 @@ func _ready() -> void:
 	m_speed_slider.value = DEFAULT_MOVE_SPEED_PX
 	_on_speed_slider_changed(m_speed_slider.value)
 	m_drill.move_speed = m_move_speed_px
+	m_return_button.pressed.connect(_on_return_button_pressed)
 	_update_hud()
 
 
 func _process(_delta: float) -> void:
 	m_drill.move_speed = m_move_speed_px
 	_update_hud()
+
+
+func _on_return_button_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/hub/Hub.tscn")
 
 
 func _on_speed_slider_changed(value: float) -> void:
