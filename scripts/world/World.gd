@@ -22,6 +22,7 @@ var _chunks: Dictionary = {} ## int chunk_index_y -> Node2D (Chunk)
 
 
 func _ready() -> void:
+	add_to_group("world")
 	sync_chunks()
 
 

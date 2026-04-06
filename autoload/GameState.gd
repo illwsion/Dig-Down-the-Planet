@@ -13,8 +13,15 @@ var visible_skills: Array[StringName] = []
 ## 달러. 달러 획득 시스템 구현 전까지 0으로 유지.
 var dollars: int = 0
 
-## 광석 인벤토리. { ore_id: StringName -> amount: int }
-var ore_inventory: Dictionary = {}
+## 채굴 중 사용하는 임시 배낭. 출발 시 비워지고, 귀환 시 hub_inventory로 이전된다.
+var run_inventory: RunInventory = RunInventory.new()
+
+## run_inventory UI 표시용 카운트. { item_id -> 표시 개수 }
+## 실제 슬롯(run_inventory)은 픽업 판정 즉시 반영, 이 값은 아이콘 소멸 시 반영.
+var run_display: Dictionary = {}
+
+## 거점 영구 보관함. 런을 넘어 유지되며 스킬 구매 비용 차감에 사용된다.
+var hub_inventory: HubInventory = HubInventory.new()
 
 
 func _ready() -> void:
@@ -24,18 +31,40 @@ func _ready() -> void:
 	print("GameState: visible_skills = ", visible_skills)
 
 
+## 출발 전 호출. run_inventory와 표시용 카운트를 모두 비운다.
+func start_run() -> void:
+	run_inventory.clear()
+	run_display.clear()
+
+
+## DropItem 아이콘이 드릴에 도달했을 때 호출. 표시용 카운트만 증가.
+func confirm_pickup(_item_id: StringName, _count: int) -> void:
+	run_display[_item_id] = run_display.get(_item_id, 0) + _count
+
+
+## 귀환 시 호출. run_inventory 전량을 hub_inventory로 이전한 뒤 비운다.
+## hub_inventory는 한계가 없으므로 항상 전량 이전 성공.
+func transfer_run_to_hub() -> void:
+	for slot in run_inventory.slots:
+		if slot["item_id"] == &"" or slot["count"] <= 0:
+			continue
+		hub_inventory.add_item(slot["item_id"], slot["count"])
+	run_inventory.clear()
+
+
+## 스킬 구매 가능 여부. hub_inventory 기준으로 확인한다.
 func can_afford(_cost: SkillCost) -> bool:
 	if dollars < _cost.dollar_cost:
 		return false
 	for oreId in _cost.ore_costs:
 		var required: int = _cost.ore_costs[oreId]
-		var owned: int = ore_inventory.get(oreId, 0)
-		if owned < required:
+		if hub_inventory.get_count(oreId) < required:
 			return false
 	return true
 
 
+## 스킬 구매 비용 차감. hub_inventory 기준으로 차감한다.
 func deduct_cost(_cost: SkillCost) -> void:
 	dollars -= _cost.dollar_cost
 	for oreId in _cost.ore_costs:
-		ore_inventory[oreId] = ore_inventory.get(oreId, 0) - _cost.ore_costs[oreId]
+		hub_inventory.remove_item(oreId, _cost.ore_costs[oreId])

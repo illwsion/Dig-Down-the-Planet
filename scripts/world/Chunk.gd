@@ -55,7 +55,6 @@ func apply_damage_at_local_if_mineable(local_cell: Vector2i, damage: float) -> v
 
 
 func _break_cell(local_cell: Vector2i) -> void:
-	## HP 0 — 타일·충돌 제거(3-7에서 자원 훅 추가 예정).
 	_remove_damage_overlay(local_cell)
 	m_tile_layer.erase_cell(local_cell)
 	m_cell_hp.erase(local_cell)
@@ -63,6 +62,24 @@ func _break_cell(local_cell: Vector2i) -> void:
 		var body: Node = m_tile_bodies[local_cell]
 		m_tile_bodies.erase(local_cell)
 		body.queue_free()
+	_spawn_drop(local_cell)
+
+
+func _spawn_drop(local_cell: Vector2i) -> void:
+	var block_id: StringName = block_id_for_cell(local_cell)
+	var def: BlockDef = block_table.get_def(block_id)
+	if def == null or def.drop_item_id == &"":
+		return
+
+	var drop_scene: PackedScene = load("res://scenes/world/DropItem.tscn")
+	var drop: Area2D = drop_scene.instantiate()
+	var world_pos: Vector2 = to_global(
+		Vector2(local_cell.x * TILE_SIZE_PX + TILE_SIZE_PX / 2.0,
+				local_cell.y * TILE_SIZE_PX + TILE_SIZE_PX / 2.0)
+	)
+	# 청크보다 오래 살아야 하므로 씬 루트에 붙인다
+	get_tree().root.add_child(drop)
+	drop.setup(def.drop_item_id, def.drop_count, world_pos)
 
 
 func _clear_damage_overlays() -> void:

@@ -1,11 +1,9 @@
-[gd_resource type="TileSet" load_steps=3 format=3 uid="uid://digterraintileset01"]
+[gd_resource type="TileSet" format=3 uid="uid://sah4b0vborau"]
 
-[ext_resource type="Texture2D" path="res://assets/tiles/tile_dirt.png" id="1_dirt"]
+[ext_resource type="Texture2D" uid="uid://c4tuh7jljtw3i" path="res://assets/tiles/tile_dirt.png" id="1_dirt"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_dirt"]
 texture = ExtResource("1_dirt")
-margins = Vector2i(0, 0)
-separation = Vector2i(0, 0)
 texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 1:0/0 = 0

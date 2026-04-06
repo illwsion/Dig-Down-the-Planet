@@ -1,14 +1,13 @@
-[gd_resource type="Resource" script_class="BlockTable" load_steps=4 format=3 uid="uid://digblocktable01"]
+[gd_resource type="Resource" script_class="BlockTable" format=3 uid="uid://6bdpu451nbp1"]
 
-[ext_resource type="Script" path="res://scripts/world/BlockTable.gd" id="1_bt"]
-[ext_resource type="Script" path="res://scripts/world/BlockDef.gd" id="2_bd"]
+[ext_resource type="Script" uid="uid://blr2y32egm1uo" path="res://scripts/world/BlockTable.gd" id="1_bt"]
+[ext_resource type="Script" uid="uid://l8ovhgj20l5p" path="res://scripts/world/BlockDef.gd" id="2_bd"]
 
 [sub_resource type="Resource" id="BlockDef_dirt"]
 script = ExtResource("2_bd")
-id = &"dirt"
-max_hp = 3
-display_name = "흙"
+drop_item_id = &"dirt"
+drop_count = 1
 
 [resource]
 script = ExtResource("1_bt")
-blocks = [SubResource("BlockDef_dirt")]
+blocks = Array[ExtResource("2_bd")]([SubResource("BlockDef_dirt")])

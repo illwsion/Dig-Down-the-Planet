@@ -72,6 +72,7 @@ func _ready() -> void:
 	# MVP용: 1번 레이어끼리 충돌되게 명시
 	collision_layer = 1
 	collision_mask = 1
+	add_to_group("drill")  # DropItem이 get_first_node_in_group("drill")으로 참조
 
 	var tex := m_sprite.texture
 	if tex == null:

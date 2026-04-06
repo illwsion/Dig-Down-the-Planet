@@ -17,6 +17,8 @@ var m_move_speed_px: float = DEFAULT_MOVE_SPEED_PX
 @onready var m_speed_value_label: Label = $UILayer/SpeedPanel/SpeedValueLabel
 @onready var m_return_button: Button = $UILayer/ReturnButton
 
+var m_run_inventory_label: Label
+
 
 func _ready() -> void:
 	print("Main ready (2-2: drill input move)")
@@ -25,6 +27,18 @@ func _ready() -> void:
 	_on_speed_slider_changed(m_speed_slider.value)
 	m_drill.move_speed = m_move_speed_px
 	m_return_button.pressed.connect(_on_return_button_pressed)
+
+	m_run_inventory_label = Label.new()
+	m_run_inventory_label.anchor_left   = 1.0
+	m_run_inventory_label.anchor_right  = 1.0
+	m_run_inventory_label.anchor_top    = 0.5
+	m_run_inventory_label.anchor_bottom = 0.5
+	m_run_inventory_label.offset_left   = -220
+	m_run_inventory_label.offset_right  = -16
+	m_run_inventory_label.offset_top    = -80
+	m_run_inventory_label.offset_bottom = 80
+	$UILayer.add_child(m_run_inventory_label)
+
 	_update_hud()
 
 
@@ -34,6 +48,9 @@ func _process(_delta: float) -> void:
 
 
 func _on_return_button_pressed() -> void:
+	for drop in get_tree().get_nodes_in_group("drop_items"):
+		drop.queue_free()
+	GameState.transfer_run_to_hub()
 	get_tree().change_scene_to_file("res://scenes/hub/Hub.tscn")
 
 
@@ -59,3 +76,27 @@ func _update_hud() -> void:
 		parts.append(m_drill.get_mining_debug_string())
 	if parts.size() > 0:
 		m_aim_label.text = "\n".join(parts)
+
+	m_run_inventory_label.text = _format_run_inventory()
+
+
+func _format_run_inventory() -> String:
+	var inv: RunInventory = GameState.run_inventory
+	var display: Dictionary = GameState.run_display
+	var lines: Array[String] = []
+	lines.append("[ 배낭 %d/%d슬롯 ]" % [_count_used_slots(inv), inv.slot_count])
+	for item_id in display:
+		var def: ItemDef = ItemDatabase.get_def(item_id)
+		var label: String = def.display_name if def != null else str(item_id)
+		lines.append("  %s × %d" % [label, display[item_id]])
+	if lines.size() == 1:
+		lines.append("  (비어 있음)")
+	return "\n".join(lines)
+
+
+func _count_used_slots(_inv: RunInventory) -> int:
+	var count: int = 0
+	for slot in _inv.slots:
+		if slot["item_id"] != &"":
+			count += 1
+	return count

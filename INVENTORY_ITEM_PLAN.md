@@ -57,64 +57,51 @@
 
 ---
 
-## 아이템 & 드롭 테이블 데이터 구조
+## 아이템 & 드롭 데이터 구조
 
-### `ItemDef.gd` — 아이템 정의 Resource
+### 아이템 추가 방법
+
+`resources/items/item_database.csv` 에 행 하나만 추가하면 된다.
+
+```
+id,display_name,sell_price
+dirt,흙,1
+stone,돌,2        ← 이렇게 한 줄만 추가
+```
+
+### `ItemDef.gd` — 아이템 정의 (런타임 생성)
+
+`@export` 없음. `ItemDatabase`가 CSV를 파싱해 런타임에 인스턴스를 생성한다.
 
 ```gdscript
 class_name ItemDef
 extends Resource
 
-@export var id: StringName = &"dirt"
-@export var display_name: String = "흙"
-@export var icon: Texture2D
-@export var max_stack: int = 99       # 슬롯 하나에 최대 쌓이는 수
-@export var sell_price: int = 1       # 달러 환산 (추후 상점)
+var id: StringName = &""
+var display_name: String = ""
+var icon: Texture2D = preload("res://assets/sprites/image_32.png")  # 공용 플레이스홀더
+var sell_price: int = 1
 ```
 
-### `DropEntry.gd` — 드롭 항목 한 행
+### `ItemDatabase.gd` — Autoload (CSV 파싱)
 
 ```gdscript
-class_name DropEntry
-extends Resource
-
-@export var item_id: StringName = &"dirt"
-@export var base_count: int = 1   # 기본 드롭 개수 (현재 1 고정)
-# 나중에 드롭률 스킬 효과로 count_multiplier 적용 예정
+# _ready()에서 CSV 로드 → _defs Dictionary 캐시
+# ItemDatabase.get_def(&"dirt")  →  ItemDef 반환
 ```
 
-### `DropTable.gd` — 블록별 드롭 테이블 Resource
+### `BlockDef.gd` — 블록 정의 (드롭 정보 포함)
 
 ```gdscript
-class_name DropTable
-extends Resource
-
-@export var entries: Array[DropEntry] = []
-
-# 드롭 목록 반환. { item_id -> count }
-# 나중에 확률·배율 로직 추가 예정
-func roll() -> Dictionary:
-    var result: Dictionary = {}
-    for entry in entries:
-        if entry.item_id != &"":
-            result[entry.item_id] = entry.base_count
-    return result
-```
-
-### `BlockDef.gd` 확장
-
-```gdscript
-# 기존
 @export var id: StringName = &"dirt"
 @export var max_hp: int = 3
 @export var display_name: String = "흙"
-
-# 추가
-@export var drop_table: DropTable   # null이면 드롭 없음
+@export var drop_item_id: StringName = &""   # 빈 문자열이면 드롭 없음
+@export var drop_count: int = 1
 ```
 
-**흙 블록 드롭 설정 (에디터 .tres 파일)**
-- `BlockDef(id="dirt")` → `drop_table` → `DropTable(entries=[DropEntry(item_id="dirt", base_count=1)])`
+**흙 블록 드롭 설정 (`block_table.tres`)**
+- `BlockDef(id="dirt", drop_item_id="dirt", drop_count=1)` — .tres 파일에 직접 저장됨
 
 ---
 
@@ -401,29 +388,26 @@ func _process(delta: float) -> void:
 
 | 파일 | 종류 | 역할 |
 |------|------|------|
-| `scripts/items/ItemDef.gd` | Resource | 아이템 정의 |
-| `scripts/items/DropEntry.gd` | Resource | 드롭 항목 한 행 |
-| `scripts/items/DropTable.gd` | Resource | 블록별 드롭 테이블 |
-| `scripts/items/RunInventory.gd` | Resource | 슬롯 기반 임시 배낭 (슬롯 수·스택 제한) |
-| `scripts/items/HubInventory.gd` | Resource | Dictionary 기반 거점 보관함 (한계 없음) |
-| `scripts/items/ItemDatabase.gd` | Autoload | id → ItemDef 조회 |
+| `scripts/items/ItemDef.gd` | class | 아이템 정의 (런타임 생성) |
+| `scripts/items/RunInventory.gd` | Resource | 슬롯 기반 임시 배낭 |
+| `scripts/items/HubInventory.gd` | Resource | Dictionary 기반 거점 보관함 |
+| `scripts/items/ItemDatabase.gd` | Autoload | CSV 파싱·캐시, id → ItemDef 조회 |
 | `scripts/world/DropItem.gd` | Node 스크립트 | 월드 드롭 아이템 동작 |
 | `scenes/world/DropItem.tscn` | 씬 | DropItem 씬 |
-| `resources/items/item_dirt.tres` | Resource 파일 | 흙 ItemDef 인스턴스 |
-| `resources/items/drop_table_dirt.tres` | Resource 파일 | 흙 블록 드롭 테이블 |
+| `resources/items/item_database.csv` | CSV | 아이템 데이터 (행 추가로 확장) |
 
 ### 기존 파일 수정
 
 | 파일 | 변경 내용 |
 |------|-----------|
-| `scripts/world/BlockDef.gd` | `drop_table: DropTable` 필드 추가 |
+| `scripts/world/BlockDef.gd` | `drop_table` 제거 → `drop_item_id`, `drop_count` 추가 |
 | `scripts/world/BlockTable.gd` | `get_def(id) -> BlockDef` 메서드 추가 |
 | `scripts/world/Chunk.gd` | `_break_cell()` 에 드롭 스폰 로직 삽입 |
 | `autoload/GameState.gd` | `ore_inventory` 제거, `run_inventory` / `hub_inventory` 추가, `start_run()` / `transfer_run_to_hub()` 추가, `can_afford` / `deduct_cost` 를 `hub_inventory` 기준으로 변경 |
 | `scenes/hub/Hub.gd` | `_on_start_button_pressed()` 에서 `GameState.start_run()` 호출 추가 |
 | `scenes/main/Main.gd` | `_on_return_button_pressed()` 에서 `GameState.transfer_run_to_hub()` 호출 추가 |
 | `scripts/player/Drill.gd` | `add_to_group("drill")` 추가 |
-| `resources/world/block_table.tres` | 흙 블록 `drop_table` 연결 |
+| `resources/world/block_table.tres` | `drop_table` 참조 제거, `drop_item_id`/`drop_count` 직접 저장 |
 
 ---
 
@@ -441,15 +425,9 @@ func _process(delta: float) -> void:
 - 내용: `id`, `display_name`, `icon`, `max_stack`, `sell_price` 필드
 - 완료 기준: 에디터에서 class_name `ItemDef` 인식됨
 
-#### STEP 2. `DropEntry.gd` 작성
-- 파일: `scripts/items/DropEntry.gd` 신규 생성
-- 내용: `item_id`, `base_count` 필드
-- 완료 기준: 에디터에서 class_name `DropEntry` 인식됨
+#### ~~STEP 2. `DropEntry.gd` 작성~~ → 삭제 (CSV 방식으로 대체)
 
-#### STEP 3. `DropTable.gd` 작성
-- 파일: `scripts/items/DropTable.gd` 신규 생성
-- 내용: `entries: Array[DropEntry]`, `roll() -> Dictionary` 메서드
-- 완료 기준: 에디터에서 class_name `DropTable` 인식됨
+#### ~~STEP 3. `DropTable.gd` 작성~~ → 삭제 (BlockDef에 직접 포함)
 
 ---
 
@@ -485,36 +463,28 @@ func _process(delta: float) -> void:
 
 ### Phase 4 — 블록 데이터에 드롭 테이블 연결
 
-#### STEP 8. `BlockDef.gd`에 `drop_table` 필드 추가
+#### STEP 8. `BlockDef.gd`에 `drop_item_id` / `drop_count` 필드 추가
 - 파일: `scripts/world/BlockDef.gd` 수정
-- 내용: `@export var drop_table: DropTable` 한 줄 추가
-- 완료 기준: 에디터에서 `block_table.tres` 의 dirt 블록 인스펙터에 `Drop Table` 항목 표시됨
+- 내용: `drop_table: DropTable` 제거 → `drop_item_id: StringName`, `drop_count: int` 추가
+- 완료 기준: 에디터에서 `block_table.tres` 의 dirt 블록 인스펙터에 두 필드 표시됨
 
 #### STEP 9. `BlockTable.gd`에 `get_def()` 메서드 추가
 - 파일: `scripts/world/BlockTable.gd` 수정
 - 내용: `func get_def(_id: StringName) -> BlockDef` — `get_max_hp()`와 같은 방식으로 배열 순회
 - 완료 기준: `block_table.get_def(&"dirt")` 가 null이 아닌 BlockDef 반환
 
-#### STEP 10. `item_dirt.tres` 생성
-- Godot 에디터 > FileSystem > `resources/items/` 폴더 생성 후
-- 새 Resource → `ItemDef` 선택 → `item_dirt.tres` 저장
-- 값 설정: `id = "dirt"`, `display_name = "흙"`, `max_stack = 99`, `sell_price = 1`
-- 완료 기준: `.tres` 파일이 `ItemDef` 타입으로 저장됨
+#### STEP 10. `item_database.csv` 생성
+- 파일: `resources/items/item_database.csv` 신규 생성
+- 내용: 헤더 + 흙 아이템 행 1줄
+- 완료 기준: 파일 존재, 새 아이템은 행 추가만으로 등록 가능
 
-#### STEP 11. `drop_table_dirt.tres` 생성
-- 새 Resource → `DropTable` 선택 → `drop_table_dirt.tres` 저장
-- entries 배열에 `DropEntry` 하나 추가: `item_id = "dirt"`, `base_count = 1`
-- 완료 기준: `.tres` 파일이 `DropTable` 타입으로 저장됨
+#### ~~STEP 11. `drop_table_dirt.tres` 생성~~ → 삭제 (BlockDef에 직접 포함)
 
-#### STEP 12. `block_table.tres`의 dirt 블록에 드롭 테이블 연결
-- 에디터에서 `resources/world/block_table.tres` 열기
-- dirt `BlockDef` 의 `Drop Table` 슬롯에 `drop_table_dirt.tres` 할당
-- 완료 기준: 인스펙터에서 dirt의 Drop Table이 null이 아님
+#### STEP 12. `block_table.tres` 정리
+- `drop_table` 참조 제거, dirt 블록에 `drop_item_id = "dirt"`, `drop_count = 1` 직접 저장
+- 완료 기준: 에디터에서 오류 없이 로드됨
 
-#### STEP 13. `ItemDatabase` Autoload에 `item_dirt.tres` 등록
-- 에디터에서 Autoload로 등록된 `ItemDatabase` 노드 선택 (또는 씬에서 직접)
-- `item_defs` 배열에 `item_dirt.tres` 추가
-- 완료 기준: `ItemDatabase.get_def(&"dirt")` 가 흙 ItemDef 반환
+#### ~~STEP 13. `ItemDatabase` Autoload에 `.tres` 등록~~ → 불필요 (CSV 자동 로드)
 
 ---
 
@@ -604,30 +574,30 @@ func _process(delta: float) -> void:
 
 | 단계 | 작업 | 유형 |
 |------|------|------|
-| STEP 1 | `ItemDef.gd` 작성 | 신규 스크립트 |
-| STEP 2 | `DropEntry.gd` 작성 | 신규 스크립트 |
-| STEP 3 | `DropTable.gd` 작성 | 신규 스크립트 |
-| STEP 4 | `HubInventory.gd` 작성 | 신규 스크립트 |
-| STEP 5 | `RunInventory.gd` 작성 | 신규 스크립트 |
-| STEP 6 | `ItemDatabase.gd` 작성 | 신규 스크립트 |
-| STEP 7 | `ItemDatabase` Autoload 등록 | 에디터 설정 |
-| STEP 8 | `BlockDef.gd` 에 `drop_table` 추가 | 기존 수정 |
-| STEP 9 | `BlockTable.gd` 에 `get_def()` 추가 | 기존 수정 |
-| STEP 10 | `item_dirt.tres` 생성 | 에디터 리소스 |
-| STEP 11 | `drop_table_dirt.tres` 생성 | 에디터 리소스 |
-| STEP 12 | `block_table.tres` 에 드롭 테이블 연결 | 에디터 리소스 |
-| STEP 13 | `ItemDatabase` 에 `item_dirt.tres` 등록 | 에디터 설정 |
-| STEP 14 | `GameState.gd` 인벤토리 교체 | 기존 수정 |
-| STEP 15 | `GameState.gd` `start_run()` / `transfer_run_to_hub()` 추가 | 기존 수정 |
-| STEP 16 | `GameState.gd` `can_afford()` / `deduct_cost()` 수정 | 기존 수정 |
-| STEP 17 | `DropItem.tscn` 씬 생성 | 신규 씬 |
-| STEP 18 | `DropItem.gd` 기본 구조 + `setup()` | 신규 스크립트 |
-| STEP 19 | `DropItem.gd` 둥둥 효과 | 기존 수정 |
-| STEP 20 | `DropItem.gd` 자동 픽업 로직 | 기존 수정 |
-| STEP 21 | `Drill.gd` 그룹 추가 | 기존 수정 |
-| STEP 22 | `Chunk._break_cell()` 드롭 스폰 훅 | 기존 수정 |
-| STEP 23 | `Hub.gd` 출발 시 `start_run()` | 기존 수정 |
-| STEP 24 | `Main.gd` 귀환 시 `transfer_run_to_hub()` | 기존 수정 |
+| STEP 1 | `ItemDef.gd` 작성 | ✅ 완료 |
+| ~~STEP 2~~ | ~~`DropEntry.gd`~~ | ❌ 삭제 |
+| ~~STEP 3~~ | ~~`DropTable.gd`~~ | ❌ 삭제 |
+| STEP 4 | `HubInventory.gd` 작성 | ✅ 완료 |
+| STEP 5 | `RunInventory.gd` 작성 | ✅ 완료 |
+| STEP 6 | `ItemDatabase.gd` 작성 | ✅ 완료 |
+| STEP 7 | `ItemDatabase` Autoload 등록 | ✅ 완료 |
+| STEP 8 | `BlockDef.gd` `drop_item_id`/`drop_count` 추가 | ✅ 완료 |
+| STEP 9 | `BlockTable.gd` `get_def()` 추가 | ✅ 완료 |
+| STEP 10 | `item_database.csv` 생성 | ✅ 완료 |
+| ~~STEP 11~~ | ~~`drop_table_dirt.tres`~~ | ❌ 삭제 |
+| STEP 12 | `block_table.tres` 정리 | ✅ 완료 |
+| ~~STEP 13~~ | ~~ItemDatabase .tres 등록~~ | ❌ 불필요 |
+| STEP 14 | `GameState.gd` 인벤토리 교체 | 🔲 미완료 |
+| STEP 15 | `GameState.gd` `start_run()` / `transfer_run_to_hub()` 추가 | 🔲 미완료 |
+| STEP 16 | `GameState.gd` `can_afford()` / `deduct_cost()` 수정 | 🔲 미완료 |
+| STEP 17 | `DropItem.tscn` 씬 생성 | 🔲 미완료 |
+| STEP 18 | `DropItem.gd` 기본 구조 + `setup()` | 🔲 미완료 |
+| STEP 19 | `DropItem.gd` 둥둥 효과 | 🔲 미완료 |
+| STEP 20 | `DropItem.gd` 자동 픽업 로직 | 🔲 미완료 |
+| STEP 21 | `Drill.gd` 그룹 추가 | 🔲 미완료 |
+| STEP 22 | `Chunk._break_cell()` 드롭 스폰 훅 | 🔲 미완료 |
+| STEP 23 | `Hub.gd` 출발 시 `start_run()` | 🔲 미완료 |
+| STEP 24 | `Main.gd` 귀환 시 `transfer_run_to_hub()` | 🔲 미완료 |
 
 ---
 
