@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="MachineDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/hub/MachineDef.gd" id="1_mdef"]
+[ext_resource type="Script" path="res://scripts/hub/MachineRecipe.gd" id="2_mrec"]
+
+[sub_resource type="Resource" id="Recipe_dirt_brick"]
+script = ExtResource("2_mrec")
+input_id = &"dirt"
+output_id = &"dirt_brick"
+
+[sub_resource type="Resource" id="Recipe_stone_brick"]
+script = ExtResource("2_mrec")
+input_id = &"stone"
+output_id = &"stone_brick"
+
+[resource]
+script = ExtResource("1_mdef")
+id = &"compressor"
+display_name = "압착기"
+process_time = 5.0
+input_count = 1
+output_count = 1
+recipes = [SubResource("Recipe_dirt_brick"), SubResource("Recipe_stone_brick")]

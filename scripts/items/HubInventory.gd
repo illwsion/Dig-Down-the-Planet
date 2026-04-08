@@ -3,6 +3,9 @@ extends Resource
 
 ## 거점 영구 보관함. 슬롯·스택 제한 없이 종류와 개수만 저장한다.
 
+## 아이템 추가·제거 시 emit. HubInventoryPanel 등이 구독해 자동 갱신한다.
+signal inventory_changed
+
 ## { item_id: StringName -> count: int }
 var items: Dictionary = {}
 
@@ -17,6 +20,7 @@ func add_item(_item_id: StringName, _count: int) -> void:
 	items[_item_id] = items.get(_item_id, 0) + _count
 	if not discovered.has(_item_id):
 		discovered.append(_item_id)
+	inventory_changed.emit()
 
 
 ## 아이템 제거. 보유량이 부족하면 false 반환.
@@ -29,6 +33,7 @@ func remove_item(_item_id: StringName, _count: int) -> bool:
 		items.erase(_item_id)
 	else:
 		items[_item_id] = remaining
+	inventory_changed.emit()
 	return true
 
 

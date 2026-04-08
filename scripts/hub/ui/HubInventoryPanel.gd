@@ -20,6 +20,7 @@ var m_current_category: StringName = c_CategoryRaw
 func _ready() -> void:
 	m_tab_bar.tab_changed.connect(_on_tab_changed)
 	m_sell_all_button.pressed.connect(_on_sell_all_pressed)
+	GameState.hub_inventory.inventory_changed.connect(refresh)
 #endregion
 
 #region Public Methods

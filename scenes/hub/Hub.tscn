@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://hub_scene"]
+[gd_scene load_steps=6 format=3 uid="uid://hub_scene"]
 
 [ext_resource type="Script" path="res://scenes/hub/Hub.gd" id="1_hub"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skill_tree/SkillTreeView.tscn" id="2_skilltreeview"]
 [ext_resource type="PackedScene" path="res://scenes/hub/ui/HubInventoryPanel.tscn" id="3_hubpanel"]
+[ext_resource type="PackedScene" path="res://scenes/hub/MachineNode.tscn" id="4_machinenode"]
+[ext_resource type="Resource" path="res://resources/hub/machine_compressor.tres" id="5_compressor"]
 
 [node name="Hub" type="Node2D"]
 script = ExtResource("1_hub")
@@ -109,6 +111,12 @@ text = "닫기"
 [node name="SkillTreeView" parent="UILayer/SkillTreePanel/VBox" instance=ExtResource("2_skilltreeview")]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="MachineArea" type="Node2D" parent="."]
+
+[node name="Compressor" parent="MachineArea" instance=ExtResource("4_machinenode")]
+position = Vector2(400, 300)
+m_def = ExtResource("5_compressor")
 
 [node name="HubInventoryPanel" parent="UILayer" instance=ExtResource("3_hubpanel")]
 layout_mode = 1
