@@ -6,10 +6,10 @@ uid="uid://bq0eg33n15yvq"
 
 [deps]
 
-files=["res://resources/items/item_database.display.translation", "res://resources/items/item_database.sell.translation"]
+files=["res://resources/items/item_database.display.translation", "res://resources/items/item_database.sell.translation", "res://resources/items/item_database.category.translation"]
 
 source_file="res://resources/items/item_database.csv"
-dest_files=["res://resources/items/item_database.display.translation", "res://resources/items/item_database.sell.translation"]
+dest_files=["res://resources/items/item_database.display.translation", "res://resources/items/item_database.sell.translation", "res://resources/items/item_database.category.translation"]
 
 [params]
 

@@ -51,7 +51,8 @@ copper,구리,5,raw
 iron,철,10,raw
 silver,은,30,raw
 gold,금,100,raw
-brick,벽돌,4,processed
+dirt_brick,흙 벽돌,4,processed
+stone_brick,돌 벽돌,8,processed
 copper_ingot,구리 주괴,20,processed
 iron_ingot,철 주괴,40,processed
 silver_ingot,은 주괴,120,processed
@@ -135,17 +136,17 @@ extends Resource
 
 | 업그레이드 단계 | capacity | input_per_unit | output_per_unit | 흙 → 벽돌 예시 |
 |----------------|----------|---------------|----------------|----------------|
-| 초기 | 1 | 1 | 1 | 흙 1 → 벽돌 1 |
-| 처리량 Lv.2 | 3 | 1 | 1 | 흙 3 → 벽돌 3 |
-| 효율 Lv.2 | 3 | 1 | 2 | 흙 3 → 벽돌 6 |
-| 처리량 Lv.3 + 효율 Lv.2 | 6 | 1 | 2 | 흙 6 → 벽돌 12 |
+| 초기 | 1 | 1 | 1 | 흙 1 → 흙 벽돌 1 |
+| 처리량 Lv.2 | 3 | 1 | 1 | 흙 3 → 흙 벽돌 3 |
+| 효율 Lv.2 | 3 | 1 | 2 | 흙 3 → 흙 벽돌 6 |
+| 처리량 Lv.3 + 효율 Lv.2 | 6 | 1 | 2 | 흙 6 → 흙 벽돌 12 |
 
 ### 초기 기계 두 종 레시피
 
 | 기계 | 투입 → 산출 | 초기 비율 |
 |------|------------|----------|
-| 압착기 | 흙 → 벽돌 | 1:1 |
-| 압착기 | 돌 → 벽돌 | 1:1 |
+| 압착기 | 흙 → 흙 벽돌 | 1:1 |
+| 압착기 | 돌 → 돌 벽돌 | 1:1 |
 | 용광로 | 구리 → 구리 주괴 | 1:1 |
 | 용광로 | 철 → 철 주괴 | 1:1 |
 | 용광로 | 은 → 은 주괴 | 1:1 |
@@ -158,15 +159,16 @@ extends Resource
 ```
 MachineNode (Node2D)           ← scripts/hub/MachineNode.gd
 ├── Sprite2D                   ← 기계 외관
-├── GaugeBar (TextureProgressBar 또는 ProgressBar)  ← 투입/작동 게이지
-├── LeverButton (Button or Area2D)  ← 레버 클릭 → 작동 시작
-├── OutputArea (Area2D)        ← 완성품 hover 감지
+├── GaugeBar (ProgressBar)     ← 투입/작동 게이지
+├── ClickArea (Area2D)         ← 기계 본체 클릭 감지 → 자원 투입 트리거
 │   └── CollisionShape2D
-└── Label (기계 이름 표시)
+├── LeverButton (Button)       ← 레버 클릭 → 작동 시작
+└── Label                      ← 기계 이름 표시
 ```
 
 > 씬 파일: `scenes/hub/MachineNode.tscn`  
-> 스크립트: `scripts/hub/MachineNode.gd`
+> 스크립트: `scripts/hub/MachineNode.gd`  
+> `OutputArea`(hover 수거)는 제거 — 완성품 수거가 자동 처리됨
 
 ---
 
@@ -174,23 +176,28 @@ MachineNode (Node2D)           ← scripts/hub/MachineNode.gd
 
 ```
 IDLE  ──[기계 클릭]──▶  LOADING
-                           │ (창고 자원이 없으면 IDLE로 복귀)
-                           │ 자원 날아오는 연출 + 게이지 차오름
-                           ▼
-                        FULL (게이지 꽉 참, 레버 활성화)
+                           │ (투입 가능한 재료 없으면 IDLE로 복귀)
+                           │ 자원 인벤토리에서 즉시 차감
+                           │ 게이지 차오름 — 초기: 즉시 반영 / C-3 이후: 아이템 날아오는 Tween
                            │
-                   [레버 클릭]
-                           │
-                           ▼
-                       RUNNING (게이지 줄어듦, 작동 중)
-                           │ (process_time 경과)
-                           ▼
-                      DONE (완성품 등장, hover 수거 대기)
-                           │
-                   [마우스 올려 수거]
-                           │
-                           ▼
-                         IDLE
+              ┌────────────┴────────────┐
+   [capacity 100%]              [capacity 미달]
+              ▼                          ▼
+           FULL                       PARTIAL
+   (게이지 100%, 레버 활성화)    (게이지 일부, 레버 활성화)
+   자동 레버 업그레이드 트리거 ○   자동 레버 업그레이드 트리거 ✕
+              │                          │
+              └──────────┬───────────────┘
+                  [레버 클릭]
+                         │
+                         ▼
+                     RUNNING (게이지 줄어듦, 작동 중)
+                         │ (process_time 경과)
+                         ▼
+                    DONE → collect_output() 자동 호출
+                         │   hub_inventory에 완성품 추가
+                         ▼
+                       IDLE
 ```
 
 ### 상태 enum
@@ -198,10 +205,11 @@ IDLE  ──[기계 클릭]──▶  LOADING
 ```gdscript
 enum MachineState {
     IDLE,      # 아무것도 없음
-    LOADING,   # 자원 투입 연출 중
-    FULL,      # 게이지 100%, 레버 대기
+    LOADING,   # 게이지 차오르는 단계. 초기엔 즉시 채워짐, C-3 이후엔 Tween으로 채워짐
+    FULL,      # capacity 100% 투입 완료. 레버 대기. 자동 레버 업그레이드 트리거 대상
+    PARTIAL,   # capacity 미달 투입 완료. 레버 클릭은 가능, 자동 레버는 발동하지 않음
     RUNNING,   # 가공 중 (게이지 감소)
-    DONE       # 완성품 대기, 수거 가능
+    DONE       # 가공 완료 — collect_output() 자동 호출 후 즉시 IDLE 복귀
 }
 ```
 
@@ -214,25 +222,30 @@ class_name MachineNode
 extends Node2D
 
 #region Variables
-[SerializeField] @export var m_def: MachineDef  # 인스펙터에서 연결
+@export var m_def: MachineDef  # 인스펙터에서 연결
 
 var m_state: MachineState = MachineState.IDLE
-var m_gauge: float = 0.0                        # 0.0 ~ 1.0
-var m_loaded_items: Dictionary = {}             # { item_id → count }
-var m_output_items: Dictionary = {}             # { item_id → count }
+var m_gauge: float = 0.0        # 0.0 ~ 1.0
+
+## 투입된 재료 추적. { input_id: StringName → units_loaded: int }
+## units_loaded = 실제 투입된 input_per_unit 단위 수 (재료 개수 아님)
+## 예) capacity=3, input_per_unit=1 → { &"dirt": 3 }
+var m_loaded_items: Dictionary = {}
+
 var m_run_timer: float = 0.0
 #endregion
 
 #region Public Methods
 
-## 기계 클릭 시 창고에서 자원 투입 시도
+## ClickArea 클릭 시 호출. 비싼 산출품 레시피 우선으로 capacity만큼 그리디 투입.
+## 투입 가능한 재료가 없으면 아무 동작 없음.
 func try_load_from_hub() -> void
 
-## 레버 클릭 시 작동 시작
+## 레버 클릭 시 호출. FULL 상태일 때만 RUNNING으로 전환.
 func start_processing() -> void
 
-## 완성품 수거 (hover 또는 자동)
-func collect_output() -> Dictionary  # 수거된 아이템 반환
+## DONE 전환 시 자동 호출. m_loaded_items 기반으로 산출량 계산 후 hub_inventory에 추가.
+func collect_output() -> void
 
 #endregion
 ```
@@ -243,20 +256,41 @@ func collect_output() -> Dictionary  # 수거된 아이템 반환
 
 ### 7-1. 투입 단계 (LOADING)
 
-1. 플레이어가 **기계 클릭**
-2. `hub_inventory`에 `accepted_inputs` 중 하나라도 있는지 확인
-3. 있으면 → `LOADING` 상태로 전환
-4. 레시피에 맞게 창고에서 자원 차감 (`hub_inventory.remove_item()`)
-5. 자원 아이콘이 기계 방향으로 날아오는 **Tween 연출**
-6. 게이지(GaugeBar) 차오름 (창고 자원 양에 따라 `capacity`까지)
-7. 게이지가 꽉 차면 → `FULL` 상태
+1. 플레이어가 **기계 클릭** (`ClickArea.input_event` 감지)
+2. **레시피 우선순위 정렬**: 각 레시피의 `output_id` 판매가를 `ItemDatabase`에서 조회 → 내림차순 정렬 (비싼 산출품 우선)
+3. **투입 가능 여부 확인**: 정렬된 레시피 중 `hub_inventory.get_count(input_id) >= input_per_unit` 인 레시피가 하나도 없으면 → **IDLE 유지**, 아무 동작 없음
+4. 하나라도 있으면 → **`LOADING` 상태 전환**
+5. **그리디(greedy) 투입** — `capacity`가 찰 때까지 우선순위 순서대로 투입:
 
-> **초기 단계에서는** 클릭 한 번에 `capacity` 만큼 꽉 채운다.  
-> 창고에 자원이 부족하면 있는 만큼만 투입 후 `FULL` 이 아닌 별도 처리(미결).
+```
+remaining = capacity
+for recipe in sorted_recipes:                       # 비싼 것 우선
+    available_units = floor(hub_inventory.get_count(recipe.input_id) / recipe.input_per_unit)
+    load_units     = min(floor(remaining / recipe.input_per_unit), available_units)
+    if load_units > 0:
+        hub_inventory.remove_item(recipe.input_id, load_units * recipe.input_per_unit)
+        m_loaded_items[recipe.input_id] = load_units
+        remaining -= load_units * recipe.input_per_unit
+    if remaining <= 0:
+        break
+```
+
+6. **`LOADING` 상태 유지** — 게이지 채우기 시작:
+   - **초기 (C-3 이전)**: 자원 차감 즉시 게이지에 반영 (아이템이 날아오는 애니메이션 없이 바로 채워짐)
+   - **C-3 이후**: 아이템 아이콘이 창고에서 기계 방향으로 날아오고, 도착 시마다 게이지 +1
+7. 투입 결과에 따라 상태 분기:
+   - 투입량이 `capacity` 100% → **`FULL` 상태 전환**
+   - 투입량이 `capacity` 미달 (1유닛 이상) → **`PARTIAL` 상태 전환**
+
+> **용량 미달 작동 허용 (옵션 4 정책)**  
+> 복수 기계에 자원이 분산 투입되어도 각 기계는 투입된 만큼으로 레버 작동이 가능하다.  
+> 예: 용량 5인 기계에 3개만 투입 → PARTIAL 전환, 레버 클릭 후 3유닛 분량만 산출.  
+> 단, **자동 레버 업그레이드**는 `FULL` 상태일 때만 발동한다 — 100% 효율 보장을 위해.  
+> `capacity`를 업그레이드할수록 한 사이클에 더 많이 처리해 효율이 높아지는 구조는 유지된다.
 
 ### 7-2. 작동 단계 (RUNNING)
 
-1. 플레이어가 **레버 클릭**
+1. 플레이어가 **레버 클릭** — `FULL` 또는 `PARTIAL` 상태일 때 모두 가능
 2. `RUNNING` 상태 전환
 3. `_process(delta)`에서 `m_run_timer` 증가
 4. `GaugeBar`가 `process_time`에 비례해 감소
@@ -264,10 +298,21 @@ func collect_output() -> Dictionary  # 수거된 아이템 반환
 
 ### 7-3. 수거 단계 (DONE)
 
-1. 완성품(벽돌/주괴) 아이콘이 기계 위에 나타남
-2. 플레이어가 **마우스를 완성품 위로 올리면** `OutputArea`가 감지
-3. `collect_output()` 호출 → `hub_inventory.add_item(output_id, count)`
-4. 기계가 `IDLE`로 복귀
+1. `m_run_timer >= m_def.process_time` 도달 시 `DONE` 상태로 전환
+2. **`collect_output()` 자동 호출** — 플레이어 조작 불필요
+3. `m_loaded_items` 순회 → 각 레시피의 산출량 계산 후 `hub_inventory.add_item()`:
+
+```
+for input_id in m_loaded_items:
+    var units: int = m_loaded_items[input_id]
+    var recipe: MachineRecipe = _find_recipe_by_input(input_id)
+    var output_count: int = units * recipe.output_per_unit
+    hub_inventory.add_item(recipe.output_id, output_count)
+```
+
+4. `m_loaded_items` 초기화
+5. `HubInventoryPanel.refresh()` 호출 (시그널로 Hub에 통보)
+6. 기계 즉시 **`IDLE`로 복귀**
 
 ---
 
@@ -362,15 +407,16 @@ func _on_sell_button_pressed() -> void:
 
 ## 10. 업그레이드 로드맵
 
-처음엔 모든 것이 수동이며, 달러를 투자해 단계별로 자동화한다.
+처음엔 투입·레버가 수동이며, 달러를 투자해 단계별로 자동화한다.  
+수거는 초기부터 자동 처리된다.
 
-### 단계 0 — 초기 (수동 전부)
+### 단계 0 — 초기
 
 | 행동 | 방식 |
 |------|------|
 | 자원 투입 | 기계 클릭 |
 | 작동 시작 | 레버 클릭 |
-| 완성품 수거 | 마우스 hover |
+| 완성품 수거 | **자동** (가공 완료 시 즉시 hub_inventory 이전) |
 | 판매 | 판매 버튼 클릭 |
 
 ### 단계 1 — 레버 자동화
@@ -378,23 +424,20 @@ func _on_sell_button_pressed() -> void:
 > 업그레이드 이름: **자동 레버**
 
 - `FULL` 상태가 되면 자동으로 `start_processing()` 호출
-- 투입·수거는 여전히 수동
+- 투입은 여전히 수동
 
-### 단계 2 — 자동 수거
+### ~~단계 2 — 자동 수거~~ (기본 동작으로 통합)
 
-> 업그레이드 이름: **수거 컨베이어**
+수거는 초기부터 자동이므로 별도 업그레이드 단계 없음.
 
-- `DONE` 상태가 되면 자동으로 `collect_output()` 호출
-- 완성품이 `hub_inventory`로 자동 이전
-
-### 단계 3 — 자원 운반 로봇
+### 단계 2 — 자원 운반 로봇
 
 > 업그레이드 이름: **운반 로봇**
 
 - 일정 주기마다 자동으로 `try_load_from_hub()` 호출
 - 기계를 클릭하지 않아도 창고에서 자동 투입
 
-### 단계 4 — 컨베이어 벨트 (완전 자동화)
+### 단계 3 — 컨베이어 벨트 (완전 자동화)
 
 > 업그레이드 이름: **컨베이어 벨트**
 
@@ -406,9 +449,9 @@ func _on_sell_button_pressed() -> void:
 ```gdscript
 ## 기계 자동화 플래그
 var auto_lever: bool = false       # 단계 1
-var auto_collect: bool = false     # 단계 2
-var auto_load_robot: bool = false  # 단계 3
-var conveyor_belt: bool = false    # 단계 4
+var auto_load_robot: bool = false  # 단계 2
+var conveyor_belt: bool = false    # 단계 3
+## auto_collect 불필요 — 수거는 기본 자동
 ```
 
 ---
@@ -540,21 +583,27 @@ var conveyor_belt: bool = false    # 단계 4
 #### A-3. `resources/hub/` 폴더 생성 + 압착기 데이터 파일 제작
 - `resources/hub/machine_compressor.tres` 신규 생성
 - `capacity=1`, `process_time=5.0`
-- 레시피 2개 추가: 흙→벽돌(1:1), 돌→벽돌(1:1)
+- 레시피 2개 추가: `dirt`→`dirt_brick`(1:1), `stone`→`stone_brick`(1:1)
 - 완료 기준: 에디터 인스펙터에서 데이터 확인
 
-#### A-4. 가공 결과물 아이템을 `item_database.csv`에 추가
-- `brick`, `copper_ingot`, `iron_ingot`, `silver_ingot`, `gold_ingot` 행 추가
-- 완료 기준: `ItemDatabase.get_def(&"brick")` 이 null이 아닌 ItemDef 반환
+#### A-4. 가공 결과물 아이템이 `item_database.csv`에 있는지 확인
+- `dirt_brick`, `stone_brick`, `copper_ingot`, `iron_ingot`, `silver_ingot`, `gold_ingot` 행 존재 여부 확인
+- Phase D-1에서 이미 추가됨 → 별도 작업 불필요
+- 완료 기준: `ItemDatabase.get_def(&"dirt_brick")` 이 null이 아닌 ItemDef 반환
 
 ---
 
 ### Phase B — 기계 씬 & 상태 머신
 
 #### B-1. `MachineNode.tscn` 씬 뼈대 제작 (에디터 작업)
-- 루트 `Node2D` → 자식: `Sprite2D`, `ProgressBar`(GaugeBar), `Button`(LeverButton), `Area2D`(OutputArea) + `CollisionShape2D`, `Label`
+- 루트 `Node2D` → 자식 노드 구조:
+  - `Sprite2D` — 기계 외관
+  - `GaugeBar (ProgressBar)` — 투입·작동 게이지
+  - `ClickArea (Area2D)` + `CollisionShape2D` — 기계 본체 클릭 감지
+  - `LeverButton (Button)` — 작동 시작 버튼
+  - `Label` — 기계 이름 표시
 - `scenes/hub/MachineNode.tscn` 으로 저장
-- 완료 기준: 씬 파일 저장됨
+- 완료 기준: 씬 파일 저장됨, 에디터에서 노드 구조 확인
 
 #### B-2. `MachineNode.gd` 뼈대 + 상태 enum 작성
 - `scripts/hub/MachineNode.gd` 신규 생성
@@ -564,9 +613,13 @@ var conveyor_belt: bool = false    # 단계 4
 - 완료 기준: 에디터 오류 없음, 인스펙터에서 `m_def` 슬롯 표시
 
 #### B-3. 투입 로직 구현 (`IDLE → LOADING → FULL`)
-- `_on_machine_clicked()` — `hub_inventory`에서 레시피 자원 확인 + 차감
-- 자원 아이콘 Tween 연출 (없으면 생략, 나중에 추가)
-- 게이지 `m_gauge` 갱신 → `capacity` 도달 시 `FULL` 전환
+- `ClickArea.input_event` 시그널 → `try_load_from_hub()` 연결
+- 레시피를 `output_id`의 판매가 기준 **내림차순 정렬** (비싼 산출품 우선)
+- 정렬 결과 **`capacity` 그리디 투입** (7-1 알고리즘 참고):
+  - 어느 레시피도 재료 없으면 → IDLE 유지, 함수 종료
+  - 있으면 → LOADING 전환 → 재료 차감 → 즉시 `FULL` 또는 `PARTIAL` 전환 (연출 없음)
+    - 투입량 == capacity → `FULL`
+    - 투입량 < capacity → `PARTIAL`
 - 완료 기준: 기계 클릭 시 `hub_inventory` 자원 차감 + `FULL` 상태 전환 확인
 
 #### B-4. 작동 로직 구현 (`FULL → RUNNING → DONE`)
@@ -576,10 +629,11 @@ var conveyor_belt: bool = false    # 단계 4
 - 완료 기준: 레버 클릭 → 게이지 감소 → `DONE` 상태 전환 확인
 
 #### B-5. 수거 로직 구현 (`DONE → IDLE`)
-- `OutputArea.mouse_entered` 시그널 → `collect_output()` 호출
-- `hub_inventory.add_item(output_id, count)`
-- 기계 `IDLE`로 복귀
-- 완료 기준: 완성품 위에 마우스 올리면 `hub_inventory`에 아이템 추가 확인
+- `DONE` 전환 시점에 `collect_output()` **자동 호출** (플레이어 입력 불필요)
+- `m_loaded_items` 순회 → 각 레시피의 `output_per_unit` 적용 → `hub_inventory.add_item()`
+- `output_collected` 시그널 emit → Hub가 받아 `HubInventoryPanel.refresh()` 호출
+- `m_loaded_items` 초기화, 기계 `IDLE`로 복귀
+- 완료 기준: 가공 완료 시 자동으로 `hub_inventory`에 완성품 추가 + 패널 갱신 확인
 
 #### B-6. 게이지 바 시각 연동
 - `ProgressBar.value` 를 `m_gauge * 100` 으로 매 프레임 갱신
@@ -633,16 +687,17 @@ var conveyor_belt: bool = false    # 단계 4
 ### Phase F — 업그레이드 연동
 
 #### F-1. `GameState.gd`에 자동화 플래그 추가
-- `auto_lever`, `auto_collect`, `auto_load_robot`, `conveyor_belt` bool 변수 추가
+- `auto_lever`, `auto_load_robot`, `conveyor_belt` bool 변수 추가
+- ~~`auto_collect`~~ — 수거가 기본 자동이므로 불필요
 - 완료 기준: 에디터 오류 없음
 
 #### F-2. 자동 레버 구현
-- `MachineNode.gd` — `FULL` 전환 시 `GameState.auto_lever == true` 이면 즉시 `start_processing()` 호출
-- 완료 기준: 플래그 활성화 시 레버 클릭 없이 자동 작동
+- `MachineNode.gd` — **`FULL` 전환 시**에만 `GameState.auto_lever == true` 이면 즉시 `start_processing()` 호출
+- `PARTIAL` 상태에서는 자동 레버 발동하지 않음 — 수동 클릭만 가능
+- 완료 기준: 플래그 활성화 시 capacity 100% 달성 시에만 레버 클릭 없이 자동 작동
 
-#### F-3. 자동 수거 구현
-- `DONE` 전환 시 `GameState.auto_collect == true` 이면 즉시 `collect_output()` 호출
-- 완료 기준: 플래그 활성화 시 hover 없이 자동 수거
+#### F-3. ~~자동 수거 구현~~ (기본 동작이 자동 수거이므로 제거)
+- 수거는 B-5에서 이미 자동 처리됨. 별도 업그레이드 단계 불필요.
 
 #### F-4. 운반 로봇 구현
 - `MachineNode.gd` — `Timer`로 주기적으로 `try_load_from_hub()` 자동 호출
@@ -660,22 +715,22 @@ var conveyor_belt: bool = false    # 단계 4
 
 | STEP | 작업 | 상태 |
 |------|------|------|
-| D-1 | `item_database.csv` `category` 열 추가 | 🔲 |
-| D-2 | `ItemDef.gd` `category` 필드 추가 | 🔲 |
-| D-3 | `ItemDatabase.gd` CSV 파서 `category` 읽기 | 🔲 |
-| D-4 | `ItemRow.tscn` 씬 제작 | 🔲 |
-| D-5 | `ItemRow.gd` 작성 + 씬 연결 | 🔲 |
-| D-6 | `HubInventoryPanel.tscn` 씬 제작 | 🔲 |
-| D-7 | `HubInventoryPanel.gd` 뼈대 작성 | 🔲 |
-| D-8 | `_refresh_list()` 탭 전환 구현 | 🔲 |
-| D-9 | `ItemRow` 판매 버튼 동작 | 🔲 |
-| D-10 | 전량 판매 버튼 추가 | 🔲 |
-| D-11 | `DollarsLabel` 추가 + 갱신 연결 | 🔲 |
-| D-12 | Hub 씬 배치 + 귀환 자동 갱신 | 🔲 |
+| D-1 | `item_database.csv` `category` 열 추가 | ✅ |
+| D-2 | `ItemDef.gd` `category` 필드 추가 | ✅ |
+| D-3 | `ItemDatabase.gd` CSV 파서 `category` 읽기 | ✅ |
+| D-4 | `ItemRow.tscn` 씬 제작 | ✅ |
+| D-5 | `ItemRow.gd` 작성 + 씬 연결 | ✅ |
+| D-6 | `HubInventoryPanel.tscn` 씬 제작 | ✅ |
+| D-7 | `HubInventoryPanel.gd` 뼈대 작성 | ✅ |
+| D-8 | `_refresh_list()` 탭 전환 구현 | ✅ |
+| D-9 | `ItemRow` 판매 버튼 동작 | ✅ |
+| D-10 | 전량 판매 버튼 추가 | ✅ |
+| D-11 | `DollarsLabel` 추가 + 갱신 연결 | ✅ |
+| D-12 | Hub 씬 배치 + 귀환 자동 갱신 | ✅ |
 | A-1 | `MachineRecipe.gd` 작성 | 🔲 |
 | A-2 | `MachineDef.gd` 작성 | 🔲 |
-| A-3 | `machine_compressor.tres` 데이터 파일 제작 | 🔲 |
-| A-4 | `item_database.csv` 가공품 행 추가 | 🔲 |
+| A-3 | `machine_compressor.tres` 데이터 파일 제작 (`dirt→dirt_brick`, `stone→stone_brick`) | 🔲 |
+| A-4 | `item_database.csv` 가공품 행 확인 (Phase D-1에서 완료) | ✅ |
 | B-1 | `MachineNode.tscn` 씬 뼈대 제작 | 🔲 |
 | B-2 | `MachineNode.gd` 뼈대 + 상태 enum | 🔲 |
 | B-3 | 투입 로직 (`IDLE → FULL`) | 🔲 |
@@ -701,7 +756,7 @@ var conveyor_belt: bool = false    # 단계 4
 
 | 항목 | 현재 기본값 | 추후 결정 |
 |------|-------------|-----------|
-| 창고 자원 부족 시 부분 투입 처리 | 있는 만큼만 투입 | 정책 확정 필요 |
+| 창고 자원 부족 시 부분 투입 처리 | **용량 미달도 작동 허용 (옵션 4 확정)** — 투입된 만큼 산출 | ✅ 확정 |
 | 기계 복수 운영 (압착기 2대 등) | 미지원 | 업그레이드로 추가 가능 |
 | 자원 투입 연출 속도 | 고정 | 후반에 빠르게 조정 가능 |
 | 판매 단위 (개별 vs 전량) | 전량 판매만 | 개별 판매 UI 추가 가능 |

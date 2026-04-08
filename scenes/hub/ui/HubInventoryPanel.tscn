@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3 uid="uid://hub_inventory_panel"]
+
+[ext_resource type="Script" path="res://scripts/hub/ui/HubInventoryPanel.gd" id="1_hubpanel"]
+
+[node name="HubInventoryPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(280, 400)
+script = ExtResource("1_hubpanel")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="TabBar" type="TabBar" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 32)
+tab_count = 2
+tab_0/title = "원자재"
+tab_1/title = "가공품"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer"]
+size_flags_vertical = 3
+
+[node name="ItemListContainer" type="VBoxContainer" parent="VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SellAllButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 36)
+text = "전량 판매"

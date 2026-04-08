@@ -7,6 +7,7 @@ extends Node
 ##  0  id
 ##  1  display_name
 ##  2  sell_price
+##  3  category   ("raw" | "processed")
 ##
 ## 새 아이템 추가: item_database.csv에 행 하나만 추가하면 된다.
 
@@ -34,16 +35,17 @@ func _load_csv() -> void:
 		push_error("ItemDatabase: CSV를 찾을 수 없음 — " + c_CsvPath)
 		return
 
-	file.get_csv_line()  # 헤더 스킵
+	file.get_csv_line()  # 헤더 스킵 (UTF-8 BOM이 있어도 이 행에서 함께 소비됨)
 
 	while not file.eof_reached():
 		var row := file.get_csv_line()
-		if row.size() < 3 or row[0].strip_edges().is_empty():
+		if row.size() < 4 or row[0].strip_edges().is_empty():
 			continue
 		var def := ItemDef.new()
 		def.id           = StringName(row[0].strip_edges())
 		def.display_name = row[1].strip_edges()
 		def.sell_price   = int(row[2].strip_edges())
+		def.category     = StringName(row[3].strip_edges())
 		_defs[def.id]    = def
 
 	print("ItemDatabase: %d개 아이템 로드 완료" % _defs.size())

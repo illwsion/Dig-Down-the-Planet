@@ -14,3 +14,6 @@ var icon: Texture2D = preload("res://assets/sprites/image_32.png")
 
 ## 추후 상점에서 달러로 환산할 기준 가격.
 var sell_price: int = 1
+
+## 인벤토리 패널 탭 분류. "raw" = 원자재, "processed" = 가공품.
+var category: StringName = &"raw"

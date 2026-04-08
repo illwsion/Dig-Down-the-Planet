@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3 uid="uid://item_row"]
+
+[ext_resource type="Script" path="res://scripts/hub/ui/ItemRow.gd" id="1_itemrow"]
+
+[node name="ItemRow" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+script = ExtResource("1_itemrow")
+
+[node name="Icon" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(32, 32)
+size_flags_vertical = 4
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="."]
+size_flags_horizontal = 3
+vertical_alignment = 1
+
+[node name="CountLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(60, 0)
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SellButton" type="Button" parent="."]
+custom_minimum_size = Vector2(60, 0)
+text = "판매"
+
+[node name="InitialDelayTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="RepeatTimer" type="Timer" parent="."]
+wait_time = 0.1
+one_shot = false
