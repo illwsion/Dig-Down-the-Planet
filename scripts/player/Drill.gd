@@ -95,6 +95,20 @@ func _ready() -> void:
 	m_collision_shape.shape = poly
 	fuel = fuel_max
 	_sync_rotation_from_aim()
+	_register_stats()
+
+
+func _register_stats() -> void:
+	StatSystem.register_base(&"mine_damage_per_tick",    mine_damage_per_tick)
+	StatSystem.register_base(&"mine_radius",              mine_radius)
+	StatSystem.register_base(&"mine_contact_radius",      mine_contact_radius)
+	StatSystem.register_base(&"mine_tick_interval",       mine_tick_interval)
+	StatSystem.register_base(&"move_speed_max",           move_speed_max)
+	StatSystem.register_base(&"move_acceleration",        move_acceleration)
+	StatSystem.register_base(&"aim_angle_limit_deg",      aim_angle_limit_deg)
+	StatSystem.register_base(&"aim_turn_max_deg_per_sec", aim_turn_max_deg_per_sec)
+	StatSystem.register_base(&"fuel_max",                 fuel_max)
+	StatSystem.register_base(&"fuel_drain_per_second",    fuel_drain_per_second)
 
 
 func _physics_process(delta: float) -> void:
@@ -153,10 +167,15 @@ func _process_mining_tick(delta: float) -> void:
 	var world: Node = get_parent().get_node_or_null("World") if get_parent() else null
 	if world == null or not world.has_method("apply_mine_damage_at_world"):
 		return
+	var tickInterval := maxf(StatSystem.get_final(&"mine_tick_interval"), 0.05)
 	m_mine_tick_accum += delta
-	while m_mine_tick_accum >= mine_tick_interval:
-		m_mine_tick_accum -= mine_tick_interval
-		world.apply_mine_damage_at_world(get_tip_global_position(), mine_radius, mine_damage_per_tick)
+	while m_mine_tick_accum >= tickInterval:
+		m_mine_tick_accum -= tickInterval
+		world.apply_mine_damage_at_world(
+			get_tip_global_position(),
+			StatSystem.get_final(&"mine_radius"),
+			StatSystem.get_final(&"mine_damage_per_tick")
+		)
 
 
 func _update_drill_status() -> void:
@@ -165,7 +184,7 @@ func _update_drill_status() -> void:
 		return
 	var world: Node = get_parent().get_node_or_null("World") if get_parent() else null
 	if world != null and world.has_method("has_mineable_tile_in_circle"):
-		if world.has_mineable_tile_in_circle(get_tip_global_position(), mine_contact_radius):
+		if world.has_mineable_tile_in_circle(get_tip_global_position(), StatSystem.get_final(&"mine_contact_radius")):
 			drill_status = DrillStatus.DIGGING
 			return
 	drill_status = DrillStatus.MOVING

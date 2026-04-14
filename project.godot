@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GameState="*res://autoload/GameState.gd"
 ItemDatabase="*uid://pu7yyw7dhdcr"
+StatSystem="*res://autoload/StatSystem.gd"
 
 [display]
 

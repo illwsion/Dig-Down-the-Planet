@@ -20,6 +20,7 @@ func _ready() -> void:
 	m_skill_tree_button.pressed.connect(_on_skill_tree_button_pressed)
 	m_close_button.pressed.connect(_on_close_button_pressed)
 	m_inventory_panel.dollars_changed.connect(update_dollars_label)
+	GameState.dollars_changed.connect(update_dollars_label)
 	m_inventory_panel.refresh()
 	update_dollars_label()
 

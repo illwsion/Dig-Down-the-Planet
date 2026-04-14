@@ -68,14 +68,14 @@ func _update_effects(_skillDef: SkillDef, _currentLevel: int, _isMaxLevel: bool)
 	m_max_level_label.visible = false
 
 	for effect in _skillDef.effects:
-		var currentBonus := effect.value_per_level * _currentLevel
-		var nextBonus := effect.value_per_level * (_currentLevel + 1)
+		var currentFinal := StatSystem.get_final(effect.stat_id)
+		var nextFinal    := currentFinal + effect.value_per_level
 		var row := Label.new()
 		row.add_theme_font_size_override("font_size", 13)
-		row.text = "%s  +%s → +%s" % [
+		row.text = "%s  %s → %s" % [
 			effect.stat_id,
-			_format_number(currentBonus),
-			_format_number(nextBonus)
+			_format_number(currentFinal),
+			_format_number(nextFinal)
 		]
 		m_effects_box.add_child(row)
 
