@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://game_root"]
+
+[ext_resource type="Script" path="res://scenes/GameRoot.gd" id="1_gameroot"]
+[ext_resource type="PackedScene" path="res://scenes/hub/Hub.tscn" id="2_hub"]
+
+[node name="GameRoot" type="Node"]
+script = ExtResource("1_gameroot")
+
+[node name="Hub" parent="." instance=ExtResource("2_hub")]

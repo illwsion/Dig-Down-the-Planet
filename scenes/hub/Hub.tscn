@@ -38,7 +38,7 @@ offset_left = -100.0
 offset_top = 40.0
 offset_right = 100.0
 offset_bottom = 80.0
-grow_horizontal = 3
+grow_horizontal = 2
 theme_override_font_sizes/font_size = 32
 text = "거점"
 horizontal_alignment = 1
@@ -54,8 +54,8 @@ offset_left = -80.0
 offset_top = -24.0
 offset_right = 80.0
 offset_bottom = 24.0
-grow_horizontal = 3
-grow_vertical = 3
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_font_sizes/font_size = 20
 text = "출발"
 
@@ -70,8 +70,8 @@ offset_left = -80.0
 offset_top = 40.0
 offset_right = 80.0
 offset_bottom = 88.0
-grow_horizontal = 3
-grow_vertical = 3
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_font_sizes/font_size = 20
 text = "스킬트리"
 
@@ -87,8 +87,8 @@ offset_left = 40.0
 offset_top = 40.0
 offset_right = -40.0
 offset_bottom = -40.0
-grow_horizontal = 3
-grow_vertical = 3
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="VBox" type="VBoxContainer" parent="UILayer/SkillTreePanel"]
 layout_mode = 2
@@ -130,3 +130,19 @@ offset_top = 60.0
 offset_right = -8.0
 offset_bottom = 460.0
 grow_horizontal = 0
+
+[node name="FlyLayer" type="Control" parent="UILayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+z_index = 10

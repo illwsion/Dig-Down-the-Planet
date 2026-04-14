@@ -27,6 +27,13 @@ func _ready() -> void:
 ## 외부에서 갱신이 필요할 때 호출 (귀환 후, 판매 후 등).
 func refresh() -> void:
 	_refresh_list(m_current_category)
+
+
+## 자원 비행 연출(C-3) 시작점. 패널의 글로벌 AABB 중심.
+## 레이아웃 직후 값이 필요하면 호출 쪽에서 `call_deferred` 등으로 한 프레임 늦출 것.
+func get_fly_start_global_position() -> Vector2:
+	var r: Rect2 = get_global_rect()
+	return r.position + r.size * 0.5
 #endregion
 
 #region Private Methods

@@ -820,14 +820,118 @@ var conveyor_belt: bool = false    # 단계 3
 - 창고 차감은 **클릭 즉시**이므로 `HubInventory.inventory_changed`로 패널이 갱신된다.
 - 게이지는 Tween 완료 시점에만 변하므로, **패널 숫자와 게이지 진행이 어긋나 보이는 것은 의도된 연출**이다.
 
-### 15-8. 구현 순서 (체크리스트)
+### 15-8. 구현 순서 (상세 체크리스트)
 
-1. Hub `CanvasLayer`에 연출용 부모 `Control` 추가 및 `Hub.gd`에 `play_item_fly(texture, global_from, global_to, on_finished: Callable)` API 구현 (`Tween` 또는 `Tween` 체인).
-2. `HubInventoryPanel`에 `get_fly_start_global_position()` (또는 `Rect2` 중심) 추가.
-3. `MachineNode`: 즉시 게이지 갱신 분기 제거 → 클릭 시 창고·내부 카운트 처리 후 Hub 비행 요청; 콜백에서 `m_gauge`·상태 전환.
-4. 내부 적재 = `input_count`이고 미도착 Tween 존재 시 `LOADING` 전환 로직 추가(선택).
-5. 연속 클릭·상한·PARTIAL 동일 재료 규칙 회귀 테스트.
-6. 자동 레버가 **시각적 `FULL` 이후**에만 도는지 확인.
+아래는 **한 단계씩 커밋·검증 가능**하도록 쪼갠 순서다. 앞 단계가 끝나야 다음 단계의 전제가 된다.
+
+---
+
+#### 8-A. Hub 씬에 연출 레이어 추가 (`Hub.tscn`)
+
+- **목적**: 모든 비행 아이콘이 **동일한 UI 좌표계**에서 그려지도록 고정한다.
+- **작업**
+  - 기존 `UILayer`(`CanvasLayer`) **내부**에 자식 노드를 추가한다. 권장 이름: `FlyLayer`.
+  - 루트 타입: **`Control`**.
+  - 앵커: 전체 화면(anchors full rect), `mouse_filter = MOUSE_FILTER_IGNORE` 로 클릭을 가리지 않게 한다.
+  - `z_index`는 인벤 패널·버튼보다 **위**에 두어 아이콘이 보이게 한다(필요 시 `CanvasLayer`의 `layer` 값 조정은 하지 않고, 형제 순서·`z_index`만으로 해결 가능한지 먼저 본다).
+- **완료 기준**: Hub 실행 시 `FlyLayer`가 존재하고, 다른 UI 클릭이 막히지 않는다.
+
+---
+
+#### 8-B. `Hub.gd`에 비행 API 뼈대 (`play_item_fly` 또는 동일 역할)
+
+- **목적**: `MachineNode`는 “텍스처·시작·끝·완료 콜백”만 넘기고, **Tween 생성·정리**는 Hub가 전담한다.
+- **시그널처 예시** (이름은 프로젝트 컨벤션에 맞게 조정 가능):
+  - `play_item_fly(_texture: Texture2D, _from_global: Vector2, _to_global: Vector2, _on_finished: Callable) -> void`
+- **구현 메모**
+  - `FlyLayer`를 `@onready`로 참조한다.
+  - 비행용 **`TextureRect`**(또는 `TextureRect`를 담는 작은 `Control`)를 **코드에서 `instantiate` 또는 매 클릭마다 `new TextureRect`** 후 `FlyLayer.add_child` 한다.
+  - `position` / `size`: 시작 시 아이콘 크기(예: 32×32)에 맞추고, `global_position` 대신 **부모 로컬**로 변환:  
+    `rect.position = fly_layer.to_local(_from_global)` 형태. 도착점도 `to_local(_to_global)`.
+  - **Tween**: Godot 4에서는 `create_tween()`으로 `position` 또는 `global_position`(부모가 전체 화면일 때) 보간. 시간·이징은 상수로 빼 두고 나중에 밸런스.
+  - **완료 시**: Tween `finished` 또는 `tween_callback`에서 `_on_finished.call()` 호출 → **반드시** 비행 노드 `queue_free()` (누수 방지).
+  - **동시 다발 비행**: 클릭마다 노드를 새로 만들면 연속 클릭 요구사항을 만족하기 쉽다. 별도 큐 없이도 동작한다(각 Tween 독립).
+- **완료 기준**: Hub에서 임시 버튼이나 `_ready` 디버그 호출로 `play_item_fly`를 한 번 호출했을 때, 화면에 아이콘이 보이고 도착 후 노드가 사라진다.
+
+---
+
+#### 8-C. `HubInventoryPanel.gd` — 시작점 조회 API
+
+- **목적**: §15-4의 “패널 중심 근처”를 **한 곳에서 정의**한다.
+- **작업**
+  - public 메서드 추가, 예: `get_fly_start_global_position() -> Vector2`.
+  - 구현: 루트 `PanelContainer`(또는 실제로 화면에 보이는 패널 노드)의 `get_global_rect()` 의 **중심** `(position + size * 0.5)` 반환.
+  - 패널이 아직 레이아웃 전이면 `0,0`이 나올 수 있으므로, 필요 시 `await get_tree().process_frame` 후 조회하는 것은 **호출 쪽(Hub 또는 MachineNode 경유)**에서 처리할지, 패널 내부에서 `call_deferred`로 보정할지 결정해 문서와 코드에 맞춘다.
+- **완료 기준**: 허브 씬에서 인벤 패널이 보이는 위치와 실제 비행 시작점이 눈으로 대응된다.
+
+---
+
+#### 8-D. Hub ↔ 기계 참조 연결
+
+- **목적**: `MachineNode`가 비행 API를 호출할 수 있게 한다.
+- **작업 (택 1 이상, 팀 선호에 따름)**
+  - **방법 1**: `Hub.gd`에 `@onready var m_fly_layer` 및 `play_item_fly`를 두고, 기계는 `get_tree().get_first_node_in_group("hub")` 또는 부모 탐색으로 Hub를 찾는다.
+  - **방법 2**: `project.godot`에 Hub 전용 **그룹명**(`hub_root`)을 등록하고 `MachineNode._ready`에서 그룹 조회.
+  - **방법 3**: `Hub.gd`가 `MachineArea` 아래 모든 `MachineNode`에 `setup_fx(hub_ref)`를 호출해 참조를 주입(결합도는 낮음).
+- **완료 기준**: 압착기 1대가 Hub의 `play_item_fly`를 **에러 없이** 호출할 수 있다.
+
+---
+
+#### 8-E. `MachineNode.gd` — 투입 로직을 “즉시 차감 + 지연 게이지”로 재구성
+
+- **목적**: §15-1의 데이터·시각 분리를 코드로 반영한다.
+- **제거·변경**
+  - 클릭 직후 `m_gauge`를 올리던 코드를 **전부 제거**한다.
+  - `FULL` 전환을 `m_loaded_count >= input_count` 같은 **내부 만 충족**으로 하지 않는다. → **게이지 도달(마지막 Tween 완료)** 기준으로만 `FULL`로 올린다.
+- **클릭 1회 처리 순서 (의사코드)**
+  1. `IDLE` / `PARTIAL` / `LOADING` 여부와 `RUNNING` 제외 규칙을 기존 정책에 맞게 검사한다.
+  2. `PARTIAL`이면 `m_chosen_recipe` 고정, `IDLE`이면 산출가 그리디로 레시피 선택(기존과 동일).
+  3. 창고 수량 부족이면 return.
+  4. **내부 적재 상한**: 이미 “예약된” 적재량(`m_loaded_count` 등)이 `m_def.input_count` 이상이면 return (연출 중 추가 클릭 방지).
+  5. `hub_inventory.remove_item(input_id, 1)` **즉시** 호출.
+  6. `m_loaded_count += 1` **즉시** 호출.
+  7. `ItemDatabase.get_def`로 `texture = def.icon` 획득.
+  8. `global_from = hub_inventory_panel.get_fly_start_global_position()`, `global_to = (스프라이트 또는 기계 기준 글로벌 중심)` 계산.
+  9. `hub.play_item_fly(texture, global_from, global_to, _on_fly_finished_for_this_click)` 호출.
+- **콜백 `_on_fly_finished`에서만 수행**
+  - `m_gauge = (도착 완료된 횟수) / float(m_def.input_count)` 형태로 갱신. “도착 완료 횟수”는 `m_arrived_count` 같은 별도 카운터를 두어 **Tween마다 +1** 하는 것이 단순하다(`m_loaded_count`와 쌍을 이룸).
+  - `ProgressBar` 갱신.
+  - 상태 재판정:
+    - `m_arrived_count > 0 && < input_count` → `PARTIAL`
+    - `m_arrived_count == input_count` → `FULL` (이때만)
+    - (선택) `m_loaded_count == input_count && m_arrived_count < input_count` → `LOADING` — 내부는 꽉 찼으나 아이콘 미도착
+  - `auto_lever`는 **`FULL`로 전환된 직후**(게이지 100% 완료 시점)에만 `start_processing()` 호출.
+- **완료 기준**: 클릭 직후 인벤 숫자는 줄고, 게이지는 아이콘이 도착한 뒤에만 움직인다. `input_count`번 클릭 후 **마지막 아이콘이 도착한 뒤**에만 `FULL`이 된다.
+
+---
+
+#### 8-F. `LOADING` 상태 (선택·권장) 정교화
+
+- **조건**: `m_loaded_count >= m_def.input_count` 이고 `m_arrived_count < m_def.input_count`.
+- **입력**: 이 구간에서 `try_load_from_hub`는 **즉시 return** (중복 예약 방지).
+- **레버**: §15-6 권장에 따라 **내부 적재 &gt; 0**이면 레버 활성 유지 가능 — 단, 이때도 `RUNNING` 중에는 비활성.
+- **완료 기준**: 내부는 다 찼는데 아이콘이 줄줄이 날아오는 동안, 상태 머신이 문서와 일치한다.
+
+---
+
+#### 8-G. 회귀·수동 테스트 시나리오
+
+| # | 시나리오 | 기대 |
+|---|----------|------|
+| G-1 | 흙만 여러 개, `input_count=1`, 클릭 1회 | 창고 즉시 -1, 짧은 지연 후 게이지 100%, `FULL` |
+| G-2 | `input_count=3`, 흙 3개, 연속 클릭 3회 | 창고 -3 즉시, 게이지는 도착 순으로 1/3 → 2/3 → 3/3, 마지막 도착 후 `FULL` |
+| G-3 | `input_count=3`, 흙 1클릭 후 레버 | `PARTIAL`에서 가공 시작 가능(정책 유지 시), 산출량은 내부 적재·레시피 규칙과 일치 |
+| G-4 | PARTIAL 상태에서 다른 재료는 클릭 | 무시 또는 불가(기존 단일 재료 정책) |
+| G-5 | 내부 `m_loaded_count == input_count` 후 추가 클릭 | 무시 (`LOADING` 또는 동일 효과) |
+| G-6 | `auto_lever` 켬, `input_count`만큼 클릭 | **마지막 아이콘 도착 후** 자동 가동 |
+| G-7 | RUNNING 중 기계 클릭 | 투입 시도 불가 |
+
+---
+
+#### 8-H. 문서·코드 동기화
+
+- 본 절(§15)과 실제 `MachineState` enum 주석을 맞춘다.
+- §12 요약표의 C-3 설명이 본 §15-8과 다르면 **C-3 행을 “§15 참고”로 수정**한다.
 
 ---
 

@@ -48,10 +48,11 @@ func _process(_delta: float) -> void:
 
 
 func _on_return_button_pressed() -> void:
-	for drop in get_tree().get_nodes_in_group("drop_items"):
-		drop.queue_free()
-	GameState.transfer_run_to_hub()
-	get_tree().change_scene_to_file("res://scenes/hub/Hub.tscn")
+	var game_root: Node = get_tree().get_first_node_in_group("game_root")
+	if game_root != null:
+		game_root.return_to_hub()
+	else:
+		push_error("Main: game_root 그룹에 GameRoot가 없습니다.")
 
 
 func _on_speed_slider_changed(value: float) -> void:
