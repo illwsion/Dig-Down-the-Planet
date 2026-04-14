@@ -93,7 +93,7 @@ func _on_start_button_pressed() -> void:
 func _on_skill_tree_button_pressed() -> void:
 	m_skill_tree_panel.visible = true
 	# visible = true 이후 레이아웃 계산이 끝난 다음 프레임에 refresh 호출
-	m_skill_tree_view.call_deferred("refresh")
+	m_skill_tree_view.call_deferred("refresh", true)
 
 
 func _on_close_button_pressed() -> void:

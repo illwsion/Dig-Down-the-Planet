@@ -23,7 +23,7 @@ func setup(_skillDef: SkillDef, _currentLevel: int, _tooltip: Node) -> void:
 	m_icon_button.mouse_entered.connect(_on_mouse_entered)
 	m_icon_button.mouse_exited.connect(_on_mouse_exited)
 	m_icon_button.pressed.connect(_on_pressed)
-	_update_color()
+	update_color()
 
 
 func _on_mouse_entered() -> void:
@@ -49,7 +49,7 @@ func _on_pressed() -> void:
 	purchased.emit(m_skill_def.id)
 
 
-func _update_color() -> void:
+func update_color() -> void:
 	if m_current_level >= m_skill_def.max_level:
 		m_icon_button.modulate = c_ColorMaxLevel
 		return

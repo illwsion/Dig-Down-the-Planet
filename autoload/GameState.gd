@@ -10,6 +10,9 @@ var learned_skills: Dictionary = {}
 ## 현재 트리에 표시 중인 스킬 id 목록.
 var visible_skills: Array[StringName] = []
 
+## 달러 잔액이 변경될 때 emit. SkillTreeView 등이 구독해 색상을 갱신한다.
+signal dollars_changed
+
 ## 달러. 달러 획득 시스템 구현 전까지 0으로 유지.
 var dollars: int = 0
 
@@ -66,5 +69,7 @@ func can_afford(_cost: SkillCost) -> bool:
 ## 스킬 구매 비용 차감. hub_inventory 기준으로 차감한다.
 func deduct_cost(_cost: SkillCost) -> void:
 	dollars -= _cost.dollar_cost
+	if _cost.dollar_cost != 0:
+		dollars_changed.emit()
 	for oreId in _cost.ore_costs:
 		hub_inventory.remove_item(oreId, _cost.ore_costs[oreId])

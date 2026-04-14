@@ -17,10 +17,14 @@ var m_is_dragging: bool = false
 func _ready() -> void:
 	_load_skill_defs()
 	refresh()
+	GameState.dollars_changed.connect(_refresh_colors)
+	GameState.hub_inventory.inventory_changed.connect(_refresh_colors)
 
 
-func refresh() -> void:
-	m_canvas.position = size / 2.0
+func refresh(_reset_position: bool = false) -> void:
+	if _reset_position:
+		m_canvas.position = size / 2.0
+		m_canvas.scale = Vector2.ONE
 	_clear_nodes()
 	for skillId in GameState.visible_skills:
 		if not m_skill_defs.has(skillId):
@@ -58,7 +62,7 @@ func _on_skill_purchased(_skillId: StringName) -> void:
 			if allMet:
 				GameState.visible_skills.append(unlockedId)
 
-	refresh()
+	call_deferred("refresh")
 
 
 func _gui_input(_event: InputEvent) -> void:
@@ -91,6 +95,11 @@ func _load_skill_defs() -> void:
 	print("SkillTreeView: 스킬 데이터 %d개 로드 완료" % m_skill_defs.size())
 
 
+func _refresh_colors() -> void:
+	for child in m_nodes_layer.get_children():
+		child.update_color()
+
+
 func _clear_nodes() -> void:
 	for child in m_nodes_layer.get_children():
-		child.queue_free()
+		child.free()
