@@ -1,4 +1,6 @@
 ﻿id,display_name,description,max_level,dollar_cost_base,dollar_cost_growth,ore_id,ore_amount_base,ore_amount_growth,effect_1_stat,effect_1_value,effect_2_stat,effect_2_value,effect_3_stat,effect_3_value,prerequisites,unlocks,pos_x,pos_y
 drill_basic,드릴 기본,드릴을 처음 얻는다.,1,0,0,,0,0,,,,,,,,drill_damage;drill_speed,0,0
 drill_damage,드릴 세기 업그레이드,드릴의 채굴 대미지를 높인다.,3,1,1,,0,0,mine_damage_per_tick,1,,,,,drill_basic,,100,0
-drill_speed,드릴 속도 업그레이드,드릴의 최대 속도를 높인다.,3,1,1,,0,0,move_speed_max,2,,,,,drill_basic,,0,100
+drill_speed,드릴 속도 업그레이드,드릴의 최대 속도를 높인다.,3,1,1,,0,0,move_speed_max,2,,,,,drill_basic,inventory_slot_addslot;inventory_slot_maxstack,0,100
+inventory_slot_addslot,인벤토리 슬롯 추가,인벤토리 슬롯을 늘린다,3,0,0,,0,0,inventory_slot_count,1,,,,,drill_speed,,100,100
+inventory_slot_maxstack,인벤토리 슬롯 강화,인벤토리 슬롯당 아이템 보유량을 늘린다,3,0,0,,0,0,inventory_max_stack,1,,,,,drill_speed,,-100,100

@@ -20,7 +20,7 @@ var slots: Array = []
 
 
 func _init() -> void:
-	_resize_slots(slot_count)
+	resize_slots(slot_count)
 
 
 ## 모든 슬롯을 비운다. 출발 전 호출.
@@ -80,7 +80,7 @@ func get_count(_item_id: StringName) -> int:
 
 
 ## 슬롯 수를 늘린다. 스킬 업그레이드 시 호출. 기존 슬롯 내용은 유지.
-func _resize_slots(_new_count: int) -> void:
+func resize_slots(_new_count: int) -> void:
 	slot_count = _new_count
 	while slots.size() < slot_count:
 		slots.append({"item_id": &"", "count": 0})

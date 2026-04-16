@@ -36,6 +36,8 @@ func _ready() -> void:
 
 ## 출발 전 호출. run_inventory와 표시용 카운트를 모두 비운다.
 func start_run() -> void:
+	run_inventory.resize_slots(int(StatSystem.get_final(&"inventory_slot_count")))
+	run_inventory.max_stack = int(StatSystem.get_final(&"inventory_max_stack"))
 	run_inventory.clear()
 	run_display.clear()
 
