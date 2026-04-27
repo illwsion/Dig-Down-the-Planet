@@ -1,16 +1,19 @@
 # 스킬 레퍼런스
 
-스킬을 추가하거나 `prerequisites` / `unlocks`를 작성할 때 참고하는 파일.
-실제 데이터 원본은 `skill_database.csv`이며, 이 파일은 요약 참고용이다.
+스킬을 추가할 때 참고하는 파일.
+실제 데이터 원본은 `skill_database.csv`이며, 레이아웃·연결 관계는 `SkillTreeView.tscn`의 SkillNode가 담당한다.
 
 ---
 
 ## 스킬 목록
 
-| id | 표시 이름 | 설명 | max_level | 효과 stat_id | 효과량/레벨 | prerequisites | unlocks |
-|----|-----------|------|:---------:|-------------|:-----------:|---------------|---------|
-| `drill_basic` | 드릴 기본 | 드릴을 처음 얻는다 | 1 | — | — | — | `drill_damage` |
-| `drill_damage` | 드릴 세기 | 채굴 대미지를 높인다 | 3 | `mine_damage_per_tick` | +1 | `drill_basic` | — |
+| id | 표시 이름 | 설명 | max_level | 효과 stat_id | 효과량/레벨 |
+|----|-----------|------|:---------:|-------------|:-----------:|
+| `drill_basic` | 드릴 기본 | 드릴을 처음 얻는다 | 1 | — | — |
+| `drill_damage` | 드릴 세기 업그레이드 | 채굴 대미지를 높인다 | 3 | `mine_damage_per_tick` | +1 |
+| `drill_speed` | 드릴 속도 업그레이드 | 최대 속도를 높인다 | 3 | `move_speed_max` | +2 |
+| `inventory_slot_addslot` | 인벤토리 슬롯 추가 | 인벤토리 슬롯을 늘린다 | 3 | `inventory_slot_count` | +1 |
+| `inventory_slot_maxstack` | 인벤토리 슬롯 강화 | 슬롯당 아이템 보유량을 늘린다 | 3 | `inventory_max_stack` | +1 |
 
 ---
 
@@ -36,9 +39,14 @@
 ## 스킬트리 구조
 
 ```
-drill_basic (0, 0)
-├── drill_damage (100, 0)
+drill_basic
+├── drill_damage
+└── drill_speed
+      ├── inventory_slot_addslot
+      └── inventory_slot_maxstack
 ```
+
+연결 관계(선행 스킬)와 위치는 `scenes/ui/skill_tree/SkillTreeView.tscn`의 각 SkillNode Inspector에서 확인·수정한다.
 
 ---
 
@@ -46,7 +54,10 @@ drill_basic (0, 0)
 
 1. 이 파일의 **스킬 목록** 테이블에 행 추가
 2. `skill_database.csv`에 동일 내용을 CSV 형식으로 추가
-3. 연결되는 기존 스킬의 `unlocks` 컬럼도 함께 수정
+3. `SkillTreeView.tscn`의 NodesLayer에 SkillNode 씬 인스턴스 추가
+4. Inspector에서 `m_skill_id` 설정
+5. 에디터 뷰포트에서 위치 드래그로 조정
+6. `m_prerequisite_nodes` 배열에 선행 스킬 노드 드래그
 
 ### CSV 컬럼 순서 (빠른 참조)
 
@@ -56,11 +67,8 @@ dollar_cost_base, dollar_cost_growth,
 ore_id, ore_amount_base, ore_amount_growth,
 effect_1_stat, effect_1_value,
 effect_2_stat, effect_2_value,
-effect_3_stat, effect_3_value,
-prerequisites, unlocks,
-pos_x, pos_y
+effect_3_stat, effect_3_value
 ```
 
-- `prerequisites` / `unlocks` 여러 개: `;` 로 구분 (예: `drill_basic;drill_damage`)
 - 비용 없음: `dollar_cost_base`=0, `ore_id` 빈칸, `ore_amount_base`=0
 - 효과 없음: `effect_1_stat` 빈칸

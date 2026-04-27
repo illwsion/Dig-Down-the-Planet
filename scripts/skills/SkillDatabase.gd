@@ -18,18 +18,15 @@ class_name SkillDatabase
 ##  12 effect_2_value
 ##  13 effect_3_stat
 ##  14 effect_3_value
-##  15 prerequisites       (';' 구분)
-##  16 unlocks             (';' 구분)
-##  17 pos_x
-##  18 pos_y
 ##
+## prerequisites, unlocks, pos_x, pos_y는 skill_tree.tscn의 SkillNode가 담당한다.
 ## 레벨 N 비용 공식:
 ##   dollar  = dollar_cost_base  + dollar_cost_growth  × (N - 1)
 ##   ore     = ore_amount_base   + ore_amount_growth   × (N - 1)
 
 const c_CsvPath := "res://resources/skills/skill_database.csv"
 const c_MaxEffects := 3
-const c_TotalColumns := 19
+const c_TotalColumns := 15
 
 
 static func load_all() -> Array[SkillDef]:
@@ -63,7 +60,6 @@ static func _parse_row(_row: PackedStringArray) -> SkillDef:
 	skill.display_name = _row[1].strip_edges()
 	skill.description  = _row[2].strip_edges()
 	skill.max_level    = int(_row[3].strip_edges())
-	skill.position     = Vector2(float(_row[17].strip_edges()), float(_row[18].strip_edges()))
 
 	var dollarBase   := int(_row[4].strip_edges())
 	var dollarGrowth := int(_row[5].strip_edges())
@@ -89,18 +85,11 @@ static func _parse_row(_row: PackedStringArray) -> SkillDef:
 		effect.value_per_level = float(_row[valueCol].strip_edges())
 		skill.effects.append(effect)
 
-	var prereqRaw := _row[15].strip_edges()
-	if not prereqRaw.is_empty():
-		for entry in prereqRaw.split(";"):
-			var trimmed := entry.strip_edges()
-			if not trimmed.is_empty():
-				skill.prerequisites.append(StringName(trimmed))
-
-	var unlocksRaw := _row[16].strip_edges()
-	if not unlocksRaw.is_empty():
-		for entry in unlocksRaw.split(";"):
-			var trimmed := entry.strip_edges()
-			if not trimmed.is_empty():
-				skill.unlocks.append(StringName(trimmed))
-
 	return skill
+
+
+static func find_by_id(_id: StringName) -> SkillDef:
+	for skill in load_all():
+		if skill.id == _id:
+			return skill
+	return null

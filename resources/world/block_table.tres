@@ -6,7 +6,6 @@
 [sub_resource type="Resource" id="BlockDef_dirt"]
 script = ExtResource("2_bd")
 drop_item_id = &"dirt"
-drop_count = 1
 
 [resource]
 script = ExtResource("1_bt")

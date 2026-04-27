@@ -1,6 +1,5 @@
 extends Control
 
-const c_SkillNodeScene := preload("res://scenes/ui/skill_tree/SkillNode.tscn")
 const c_ZoomMin := 0.3
 const c_ZoomMax := 2.0
 const c_ZoomStep := 0.1
@@ -10,12 +9,11 @@ const c_ZoomStep := 0.1
 @onready var m_nodes_layer: Control = $Canvas/NodesLayer
 @onready var m_tooltip: Node = $Tooltip
 
-var m_skill_defs: Dictionary = {}
 var m_is_dragging: bool = false
 
 
 func _ready() -> void:
-	_load_skill_defs()
+	_setup_skill_nodes()
 	refresh()
 	GameState.dollars_changed.connect(_refresh_colors)
 	GameState.hub_inventory.inventory_changed.connect(_refresh_colors)
@@ -25,43 +23,14 @@ func refresh(_reset_position: bool = false) -> void:
 	if _reset_position:
 		m_canvas.position = size / 2.0
 		m_canvas.scale = Vector2.ONE
-	_clear_nodes()
-	for skillId in GameState.visible_skills:
-		if not m_skill_defs.has(skillId):
-			push_warning("SkillTreeView: 스킬 id를 찾을 수 없음 — %s" % skillId)
-			continue
-		var skillDef: SkillDef = m_skill_defs[skillId]
-		var currentLevel: int = GameState.learned_skills.get(skillId, 0)
-		var node := c_SkillNodeScene.instantiate()
-		m_nodes_layer.add_child(node)
-		node.setup(skillDef, currentLevel, m_tooltip)
-		node.purchased.connect(_on_skill_purchased)
-
-	m_connections_layer.update_lines(m_skill_defs)
-	print("SkillTreeView: %d개 스킬 노드 배치 완료" % m_nodes_layer.get_child_count())
+	for node in m_nodes_layer.get_children():
+		node.visible = GameState.visible_skills.has(node.m_skill_id)
+		node.update_color()
+	m_connections_layer.queue_redraw()
 
 
 func _on_skill_purchased(_skillId: StringName) -> void:
-	var skillDef: SkillDef = m_skill_defs.get(_skillId)
-	if not skillDef:
-		return
-
-	var newLevel: int = GameState.learned_skills.get(_skillId, 0)
-	if newLevel == 1:
-		for unlockedId in skillDef.unlocks:
-			if GameState.visible_skills.has(unlockedId):
-				continue
-			var unlockedDef: SkillDef = m_skill_defs.get(unlockedId)
-			if not unlockedDef:
-				continue
-			var allMet := true
-			for prereqId in unlockedDef.prerequisites:
-				if GameState.learned_skills.get(prereqId, 0) < 1:
-					allMet = false
-					break
-			if allMet:
-				GameState.visible_skills.append(unlockedId)
-
+	_check_new_unlocks()
 	call_deferred("refresh")
 
 
@@ -88,18 +57,26 @@ func _zoom(_mousePos: Vector2, _factor: float) -> void:
 	m_canvas.scale = Vector2(newScale, newScale)
 
 
-func _load_skill_defs() -> void:
-	var allSkills := SkillDatabase.load_all()
-	for skillDef in allSkills:
-		m_skill_defs[skillDef.id] = skillDef
-	print("SkillTreeView: 스킬 데이터 %d개 로드 완료" % m_skill_defs.size())
+func _setup_skill_nodes() -> void:
+	for node in m_nodes_layer.get_children():
+		node.setup(m_tooltip)
+		node.purchased.connect(_on_skill_purchased)
+
+
+func _check_new_unlocks() -> void:
+	for skillNode in m_nodes_layer.get_children():
+		if GameState.visible_skills.has(skillNode.m_skill_id):
+			continue
+		var allMet := true
+		for nodePath in skillNode.m_prerequisite_nodes:
+			var prereqNode := skillNode.get_node(nodePath)
+			if GameState.learned_skills.get(prereqNode.m_skill_id, 0) < 1:
+				allMet = false
+				break
+		if allMet:
+			GameState.visible_skills.append(skillNode.m_skill_id)
 
 
 func _refresh_colors() -> void:
 	for child in m_nodes_layer.get_children():
 		child.update_color()
-
-
-func _clear_nodes() -> void:
-	for child in m_nodes_layer.get_children():
-		child.free()

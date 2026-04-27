@@ -3,13 +3,18 @@
 [ext_resource type="Script" uid="uid://dpgvorahsyuf3" path="res://scripts/ui/skill_tree/SkillTreeView.gd" id="1_skilltreeview"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skill_tree/SkillTooltip.tscn" id="2_skilltooltip"]
 [ext_resource type="Script" uid="uid://dh5s1l08axrgm" path="res://scripts/ui/skill_tree/SkillTreeLines.gd" id="3_skilltreelines"]
+[ext_resource type="Texture2D" uid="uid://34g3jgwpvq11" path="res://icon.svg" id="4_5t7pt"]
+[ext_resource type="PackedScene" path="res://scenes/ui/skill_tree/SkillNode.tscn" id="4_skillnode"]
 
 [node name="SkillTreeView" type="Control" unique_id=1579095403]
-clip_contents = true
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 198.0
+offset_top = 3.0
+offset_right = 198.0
+offset_bottom = 3.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_skilltreeview")
@@ -22,6 +27,51 @@ script = ExtResource("3_skilltreelines")
 [node name="NodesLayer" type="Control" parent="Canvas" unique_id=950729850]
 layout_mode = 3
 anchors_preset = 0
+
+[node name="SkillNode_DrillBasic" parent="Canvas/NodesLayer" unique_id=2058191531 instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+texture_normal = ExtResource("4_5t7pt")
+m_skill_id = &"drill_basic"
+
+[node name="SkillNode_DrillDamage" parent="Canvas/NodesLayer" unique_id=1158131431 instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_left = 100.0
+offset_right = 164.0
+offset_bottom = 64.0
+texture_normal = ExtResource("4_5t7pt")
+m_skill_id = &"drill_damage"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillBasic")])
+
+[node name="SkillNode_DrillSpeed" parent="Canvas/NodesLayer" unique_id=2026177502 instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_top = 100.0
+offset_right = 64.0
+offset_bottom = 164.0
+texture_normal = ExtResource("4_5t7pt")
+m_skill_id = &"drill_speed"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillBasic")])
+
+[node name="SkillNode_InvAddSlot" parent="Canvas/NodesLayer" unique_id=1990847459 instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 100.0
+offset_right = 164.0
+offset_bottom = 164.0
+texture_normal = ExtResource("4_5t7pt")
+m_skill_id = &"inventory_slot_addslot"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillSpeed")])
+
+[node name="SkillNode_InvMaxStack" parent="Canvas/NodesLayer" unique_id=662322797 instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_left = -100.0
+offset_top = 100.0
+offset_right = -36.0
+offset_bottom = 164.0
+texture_normal = ExtResource("4_5t7pt")
+m_skill_id = &"inventory_slot_maxstack"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillSpeed")])
 
 [node name="Tooltip" parent="." unique_id=1328838739 instance=ExtResource("2_skilltooltip")]
 layout_mode = 0
