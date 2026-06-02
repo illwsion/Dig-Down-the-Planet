@@ -41,6 +41,37 @@ theme_override_font_sizes/font_size = 16
 autowrap_mode = 3
 text = "조준각: —"
 
+[node name="FuelPanel" type="VBoxContainer" parent="UILayer"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -56.0
+offset_top = -196.0
+offset_right = -12.0
+offset_bottom = -60.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="FuelBar" type="ProgressBar" parent="UILayer/FuelPanel"]
+layout_mode = 2
+size_flags_horizontal = 4
+custom_minimum_size = Vector2(28, 120)
+max_value = 10.0
+value = 10.0
+show_percentage = false
+fill_mode = 3
+
+[node name="FuelLabel" type="Label" parent="UILayer/FuelPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "10 / 10"
+horizontal_alignment = 1
+
 [node name="SpeedPanel" type="VBoxContainer" parent="UILayer"]
 layout_mode = 1
 anchors_preset = 1

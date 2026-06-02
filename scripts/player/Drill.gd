@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+signal run_end_fuel_depleted
+
 ## 바디 원점(0,0) = 드릴 끝(tip). 회전 축도 tip이므로 월드에서의 tip은 [method get_tip_global_position]과 동일.
 ## 채굴·접촉 반경(`mine_*`)의 기준점은 항상 이 tip 월드 좌표 하나로 고정한다 (3-1).
 ## 조작: 마우스 왼쪽 홀드 시에만 전진 + 마우스 방향으로 초당 회전 제한 있게 회전.
@@ -34,11 +36,11 @@ var move_speed: float = 400.0
 @export_range(0.5, 4.0, 0.1) var dig_sprite_shake_rot_deg: float = 3.2
 @export_range(2.0, 28.0, 0.5) var dig_sprite_shake_hz: float = 6.0
 
-## 연료: 접두 `fuel_*`.
-@export var fuel_max: float = 100.0
-@export var fuel_drain_per_second: float = 5.0
+## 연료: 접두 `fuel_*`. 소모는 채굴 틱마다 `fuel_cost_per_mine_tick` (FUEL_SYSTEM_DESIGN.md).
+@export var fuel_max: float = 10.0
+@export var fuel_cost_per_mine_tick: float = 2.0
 
-## 현재 연료. 소모 정책은 구현 시 홀드/이동 조건에 맞춤.
+## 현재 연료. `_ready`에서 `StatSystem.get_final(&"fuel_max")`로 초기화.
 var fuel: float = 0.0
 
 ## 조준: 접두 `aim_*`.
@@ -54,6 +56,7 @@ var m_current_speed: float = 0.0
 var m_target_speed: float = 0.0
 
 const MOUSE_AIM_MIN_PX := 8.0
+const TILE_SIZE_PX := 32.0
 
 enum DrillStatus { IDLE, MOVING, DIGGING }
 
@@ -66,6 +69,8 @@ var m_mine_tick_accum: float = 0.0
 ## `_sync_rotation_from_aim` 이후 스프라이트만 흔드는 기준 위치(`_ready`에서 설정).
 var m_sprite_rest_position: Vector2 = Vector2.ZERO
 var m_dig_shake_phase: float = 0.0
+var m_fuel_depleted_emitted: bool = false
+var m_input_locked: bool = false
 
 
 func _ready() -> void:
@@ -93,9 +98,9 @@ func _ready() -> void:
 		Vector2(half_top, -h),
 	])
 	m_collision_shape.shape = poly
-	fuel = fuel_max
-	_sync_rotation_from_aim()
 	_register_stats()
+	fuel = StatSystem.get_final(&"fuel_max")
+	_sync_rotation_from_aim()
 
 
 func _register_stats() -> void:
@@ -108,13 +113,17 @@ func _register_stats() -> void:
 	StatSystem.register_base(&"aim_angle_limit_deg",      aim_angle_limit_deg)
 	StatSystem.register_base(&"aim_turn_max_deg_per_sec", aim_turn_max_deg_per_sec)
 	StatSystem.register_base(&"fuel_max",                 fuel_max)
-	StatSystem.register_base(&"fuel_drain_per_second",    fuel_drain_per_second)
+	StatSystem.register_base(&"fuel_cost_per_mine_tick",  fuel_cost_per_mine_tick)
+
+
+func set_input_locked(_locked: bool) -> void:
+	m_input_locked = _locked
 
 
 func _physics_process(delta: float) -> void:
 	move_speed = minf(move_speed, move_speed_max)
 	_update_drill_status()
-	if Input.is_action_pressed("drill_down"):
+	if not m_input_locked and Input.is_action_pressed("drill_down"):
 		var to_mouse := get_global_mouse_position() - global_position
 		if to_mouse.length() >= MOUSE_AIM_MIN_PX:
 			var desired := atan2(to_mouse.x, to_mouse.y)
@@ -160,9 +169,18 @@ func _update_dig_sprite_fx(delta: float) -> void:
 	m_sprite.rotation = wobble
 
 
+func _compute_fuel_cost_for_tick() -> float:
+	var cost_base: float = StatSystem.get_final(&"fuel_cost_per_mine_tick")
+	var depth_m: float = get_tip_global_position().y / TILE_SIZE_PX
+	var cost_depth: float = FuelDepthCost.get_additive(depth_m)
+	return maxf(cost_base + cost_depth, 0.0)
+
+
 func _process_mining_tick(delta: float) -> void:
 	if drill_status == DrillStatus.IDLE:
 		m_mine_tick_accum = 0.0
+		return
+	if m_fuel_depleted_emitted or fuel <= 0.0:
 		return
 	var world: Node = get_parent().get_node_or_null("World") if get_parent() else null
 	if world == null or not world.has_method("apply_mine_damage_at_world"):
@@ -170,16 +188,34 @@ func _process_mining_tick(delta: float) -> void:
 	var tickInterval := maxf(StatSystem.get_final(&"mine_tick_interval"), 0.05)
 	m_mine_tick_accum += delta
 	while m_mine_tick_accum >= tickInterval:
+		if m_fuel_depleted_emitted:
+			break
 		m_mine_tick_accum -= tickInterval
+		var cost: float = _compute_fuel_cost_for_tick()
+		if fuel < cost:
+			fuel = 0.0
+			_emit_fuel_depleted()
+			break
+		fuel -= cost
 		world.apply_mine_damage_at_world(
 			get_tip_global_position(),
 			StatSystem.get_final(&"mine_radius"),
 			StatSystem.get_final(&"mine_damage_per_tick")
 		)
+		if fuel <= 0.0:
+			fuel = 0.0
+			_emit_fuel_depleted()
+
+
+func _emit_fuel_depleted() -> void:
+	if m_fuel_depleted_emitted:
+		return
+	m_fuel_depleted_emitted = true
+	run_end_fuel_depleted.emit()
 
 
 func _update_drill_status() -> void:
-	if not Input.is_action_pressed("drill_down"):
+	if m_input_locked or not Input.is_action_pressed("drill_down"):
 		drill_status = DrillStatus.IDLE
 		return
 	var world: Node = get_parent().get_node_or_null("World") if get_parent() else null

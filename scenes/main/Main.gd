@@ -2,10 +2,15 @@ extends Node2D
 
 ## 이동/조준은 Drill에서 처리: 마우스 왼쪽 홀드 시 전진 + 마우스 방향으로 천천히 회전(±30°). Main은 HUD·슬라이더.
 
+signal run_end_requested(reason: StringName)
+
+const END_REASON_FUEL_DEPLETED: StringName = &"fuel_depleted"
+const END_REASON_RETURN_TO_HUB: StringName = &"return_to_hub"
 const TILE_SIZE_PX := 32
 const DEFAULT_MOVE_SPEED_PX := 400.0
 
 var m_move_speed_px: float = DEFAULT_MOVE_SPEED_PX
+var m_max_depth_m: float = 0.0
 
 @onready var m_drill: CharacterBody2D = $Drill
 @onready var m_world: Node2D = $World
@@ -15,9 +20,12 @@ var m_move_speed_px: float = DEFAULT_MOVE_SPEED_PX
 @onready var m_aim_label: Label = $UILayer/AimLabel
 @onready var m_speed_slider: HSlider = $UILayer/SpeedPanel/SpeedSlider
 @onready var m_speed_value_label: Label = $UILayer/SpeedPanel/SpeedValueLabel
+@onready var m_fuel_bar: ProgressBar = $UILayer/FuelPanel/FuelBar
+@onready var m_fuel_label: Label = $UILayer/FuelPanel/FuelLabel
 @onready var m_return_button: Button = $UILayer/ReturnButton
 
 var m_run_inventory_label: Label
+var m_run_ended: bool = false
 
 
 func _ready() -> void:
@@ -27,6 +35,7 @@ func _ready() -> void:
 	_on_speed_slider_changed(m_speed_slider.value)
 	m_drill.move_speed = m_move_speed_px
 	m_return_button.pressed.connect(_on_return_button_pressed)
+	m_drill.run_end_fuel_depleted.connect(_on_run_end_fuel_depleted)
 
 	m_run_inventory_label = Label.new()
 	m_run_inventory_label.anchor_left   = 1.0
@@ -43,16 +52,29 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	m_drill.move_speed = m_move_speed_px
+	if not m_run_ended:
+		m_drill.move_speed = m_move_speed_px
 	_update_hud()
 
 
 func _on_return_button_pressed() -> void:
-	var game_root: Node = get_tree().get_first_node_in_group("game_root")
-	if game_root != null:
-		game_root.return_to_hub()
-	else:
-		push_error("Main: game_root 그룹에 GameRoot가 없습니다.")
+	if m_run_ended:
+		return
+	_request_run_end(END_REASON_RETURN_TO_HUB)
+
+
+func _on_run_end_fuel_depleted() -> void:
+	_request_run_end(END_REASON_FUEL_DEPLETED)
+
+
+func _request_run_end(reason: StringName) -> void:
+	if m_run_ended:
+		return
+	m_run_ended = true
+	m_drill.set_input_locked(true)
+	m_speed_slider.editable = false
+	m_return_button.disabled = true
+	run_end_requested.emit(reason)
 
 
 func _on_speed_slider_changed(value: float) -> void:
@@ -62,6 +84,7 @@ func _on_speed_slider_changed(value: float) -> void:
 
 func _update_hud() -> void:
 	var depth_m := m_drill.position.y / float(TILE_SIZE_PX)
+	m_max_depth_m = maxf(m_max_depth_m, depth_m)
 	m_depth_label.text = "깊이: %.1f m" % depth_m
 	m_fps_label.text = "FPS: %d" % int(Engine.get_frames_per_second())
 	if m_world.has_method("get_active_chunk_summary"):
@@ -78,7 +101,18 @@ func _update_hud() -> void:
 	if parts.size() > 0:
 		m_aim_label.text = "\n".join(parts)
 
+	_update_fuel_hud()
 	m_run_inventory_label.text = _format_run_inventory()
+
+
+func _update_fuel_hud() -> void:
+	var fuel_max: float = StatSystem.get_final(&"fuel_max")
+	var fuel: float = m_drill.fuel
+	m_fuel_bar.max_value = fuel_max
+	m_fuel_bar.value = clampf(fuel, 0.0, fuel_max)
+	m_fuel_label.text = "%d / %d" % [roundi(fuel), roundi(fuel_max)]
+	if fuel <= 0.0 and not m_run_ended:
+		_on_run_end_fuel_depleted()
 
 
 func _format_run_inventory() -> String:
@@ -101,3 +135,7 @@ func _count_used_slots(_inv: RunInventory) -> int:
 		if slot["item_id"] != &"":
 			count += 1
 	return count
+
+
+func get_max_depth_m() -> float:
+	return m_max_depth_m

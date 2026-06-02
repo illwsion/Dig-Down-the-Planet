@@ -1,0 +1,92 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/RunResultScreen.gd" id="1_run_result"]
+
+[node name="RunResultScreen" type="CanvasLayer"]
+layer = 20
+script = ExtResource("1_run_result")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.55)
+
+[node name="Center" type="CenterContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Card" type="PanelContainer" parent="Root/Center"]
+layout_mode = 2
+custom_minimum_size = Vector2(520, 420)
+
+[node name="Margin" type="MarginContainer" parent="Root/Center/Card"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
+
+[node name="Content" type="VBoxContainer" parent="Root/Center/Card/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="Root/Center/Card/Margin/Content"]
+layout_mode = 2
+text = "연료 고갈"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 34
+
+[node name="SummaryDepthLabel" type="Label" parent="Root/Center/Card/Margin/Content"]
+layout_mode = 2
+text = "최대 깊이: 0.0 m"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+
+[node name="SummaryDurationLabel" type="Label" parent="Root/Center/Card/Margin/Content"]
+layout_mode = 2
+text = "런 시간: 00:00"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+
+[node name="ItemsTitleLabel" type="Label" parent="Root/Center/Card/Margin/Content"]
+layout_mode = 2
+text = "획득 재료"
+theme_override_font_sizes/font_size = 20
+
+[node name="ItemsList" type="ItemList" parent="Root/Center/Card/Margin/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 180)
+size_flags_vertical = 3
+fixed_column_width = 280
+
+[node name="Buttons" type="HBoxContainer" parent="Root/Center/Card/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HubButton" type="Button" parent="Root/Center/Card/Margin/Content/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "허브로 복귀"
+
+[node name="RetryButton" type="Button" parent="Root/Center/Card/Margin/Content/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "새 런 시작"
