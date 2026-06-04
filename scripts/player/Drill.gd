@@ -170,10 +170,20 @@ func _update_dig_sprite_fx(delta: float) -> void:
 
 
 func _compute_fuel_cost_for_tick() -> float:
-	var cost_base: float = StatSystem.get_final(&"fuel_cost_per_mine_tick")
+	var parts := _get_fuel_cost_parts()
+	return parts["total"]
+
+
+func _get_fuel_cost_parts() -> Dictionary:
+	var base: float = StatSystem.get_final(&"fuel_cost_per_mine_tick")
 	var depth_m: float = get_tip_global_position().y / TILE_SIZE_PX
-	var cost_depth: float = FuelDepthCost.get_additive(depth_m)
-	return maxf(cost_base + cost_depth, 0.0)
+	var depth: float = FuelDepthCost.get_additive(depth_m)
+	var total: float = maxf(base + depth, 0.0)
+	return {
+		"base": base,
+		"depth": depth,
+		"total": total,
+	}
 
 
 func _process_mining_tick(delta: float) -> void:
@@ -256,6 +266,11 @@ func get_mining_debug_string() -> String:
 
 func get_speed_debug_string() -> String:
 	return "현재속도: %4.0f px/s  →  목표: %4.0f px/s" % [m_current_speed, m_target_speed]
+
+
+func get_fuel_cost_debug_string() -> String:
+	var parts := _get_fuel_cost_parts()
+	return "연료소모/틱: (%.1f) + (%.1f) = (%.1f)" % [parts["base"], parts["depth"], parts["total"]]
 
 
 func get_status_debug_string() -> String:

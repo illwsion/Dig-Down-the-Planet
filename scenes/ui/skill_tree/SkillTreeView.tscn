@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dpgvorahsyuf3" path="res://scripts/ui/skill_tree/SkillTreeView.gd" id="1_skilltreeview"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skill_tree/SkillTooltip.tscn" id="2_skilltooltip"]
 [ext_resource type="Script" uid="uid://dh5s1l08axrgm" path="res://scripts/ui/skill_tree/SkillTreeLines.gd" id="3_skilltreelines"]
+[ext_resource type="Texture2D" uid="uid://1b8clk5kl0d2" path="res://assets/sprites/image_32.png" id="4_0tmdg"]
 [ext_resource type="Texture2D" uid="uid://34g3jgwpvq11" path="res://icon.svg" id="4_5t7pt"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skill_tree/SkillNode.tscn" id="4_skillnode"]
 
@@ -32,7 +33,7 @@ anchors_preset = 0
 layout_mode = 0
 offset_right = 64.0
 offset_bottom = 64.0
-texture_normal = ExtResource("4_5t7pt")
+texture_normal = ExtResource("4_0tmdg")
 m_skill_id = &"drill_basic"
 
 [node name="SkillNode_DrillDamage" parent="Canvas/NodesLayer" unique_id=1158131431 instance=ExtResource("4_skillnode")]
@@ -72,6 +73,24 @@ offset_bottom = 164.0
 texture_normal = ExtResource("4_5t7pt")
 m_skill_id = &"inventory_slot_maxstack"
 m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillSpeed")])
+
+[node name="SkillNode_FuelMax" parent="Canvas/NodesLayer" unique_id=2085713802 instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_left = 200.0
+offset_right = 264.0
+offset_bottom = 64.0
+texture_normal = ExtResource("4_0tmdg")
+m_skill_id = &"fuel_max"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillDamage")])
+
+[node name="SkillNode_FuelCost" parent="Canvas/NodesLayer" unique_id=2010880214 instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_left = 300.0
+offset_right = 364.0
+offset_bottom = 64.0
+texture_normal = ExtResource("4_0tmdg")
+m_skill_id = &"fuel_cost"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_FuelMax")])
 
 [node name="Tooltip" parent="." unique_id=1328838739 instance=ExtResource("2_skilltooltip")]
 layout_mode = 0

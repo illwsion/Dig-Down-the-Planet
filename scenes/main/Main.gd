@@ -96,6 +96,8 @@ func _update_hud() -> void:
 		parts.append(m_drill.get_status_debug_string())
 	if m_drill.has_method("get_speed_debug_string"):
 		parts.append(m_drill.get_speed_debug_string())
+	if m_drill.has_method("get_fuel_cost_debug_string"):
+		parts.append(m_drill.get_fuel_cost_debug_string())
 	if m_drill.has_method("get_mining_debug_string"):
 		parts.append(m_drill.get_mining_debug_string())
 	if parts.size() > 0:
@@ -110,7 +112,7 @@ func _update_fuel_hud() -> void:
 	var fuel: float = m_drill.fuel
 	m_fuel_bar.max_value = fuel_max
 	m_fuel_bar.value = clampf(fuel, 0.0, fuel_max)
-	m_fuel_label.text = "%d / %d" % [roundi(fuel), roundi(fuel_max)]
+	m_fuel_label.text = "%.1f / %.1f" % [fuel, fuel_max]
 	if fuel <= 0.0 and not m_run_ended:
 		_on_run_end_fuel_depleted()
 
