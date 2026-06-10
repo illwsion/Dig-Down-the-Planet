@@ -67,7 +67,7 @@ func _get_title_for_end_reason(end_reason: StringName) -> String:
 
 func _format_duration_mm_ss(duration_sec: float) -> String:
 	var total_sec: int = maxi(int(floor(duration_sec)), 0)
-	var minutes: int = total_sec / 60
+	var minutes: int = total_sec / 60.0
 	var seconds: int = total_sec % 60
 	return "%02d:%02d" % [minutes, seconds]
 

@@ -44,10 +44,10 @@ func _ensure_skill_defs_loaded() -> void:
 
 func _ready() -> void:
 	m_bases = {
-		&"mine_damage_per_tick":     1.0,
+		&"mine_damage_per_tick":     2.0,
 		&"mine_radius":              50.0,
 		&"mine_contact_radius":      10.0,
-		&"mine_tick_interval":       2.0,
+		&"mine_tick_interval":       1.0,
 		&"move_speed_max":           400.0,
 		&"move_acceleration":        400.0,
 		&"aim_angle_limit_deg":      30.0,

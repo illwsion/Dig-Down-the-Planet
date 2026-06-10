@@ -112,14 +112,14 @@ func try_load_from_hub() -> void:
 	var item_def: ItemDef = ItemDatabase.get_def(m_chosen_recipe.input_id)
 	var tex: Texture2D = item_def.icon if item_def != null else null
 	var from_global: Vector2 = Vector2.ZERO
-	var to_global: Vector2 = m_sprite.global_position
+	var fly_target_global: Vector2 = m_sprite.global_position
 	if is_instance_valid(m_hub):
 		var fg: Variant = m_hub.call(&"get_fly_start_global_position")
 		if fg is Vector2:
 			from_global = fg
 
 	if is_instance_valid(m_hub):
-		m_hub.call(&"play_item_fly", tex, from_global, to_global, Callable(self, "_on_inventory_fly_finished"))
+		m_hub.call(&"play_item_fly", tex, from_global, fly_target_global, Callable(self, "_on_inventory_fly_finished"))
 	else:
 		push_warning("MachineNode: Hub를 찾을 수 없어 비행 없이 즉시 도착 처리합니다.")
 		call_deferred("_on_inventory_fly_finished")

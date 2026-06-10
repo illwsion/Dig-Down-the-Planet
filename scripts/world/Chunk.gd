@@ -14,8 +14,12 @@ const HEIGHT_TILES := 32
 @onready var m_colliders_root: Node2D = $Colliders
 
 var m_tile_bodies: Dictionary = {} ## Vector2i(local_x, local_y) -> StaticBody2D
-## 로컬 셀 → 현재 HP. 스폰 시 솔리드 타일마다 풀 HP로 전부 채움 (3-4).
+## 로컬 셀 → 현재 HP. 스폰 시 WorldGenerator가 계산한 max_hp로 채움.
 var m_cell_hp: Dictionary = {}
+## 로컬 셀 → 블록 id (dirt / stone).
+var m_cell_block_id: Dictionary = {}
+## 로컬 셀 → 스폰 시 max HP (깊이·블록 종류 반영).
+var m_cell_max_hp: Dictionary = {}
 ## 셀별 손상 오버레이(Polygon2D). 타일맵 modulate와 무관하게 셀 단위로만 표시 (3-6).
 var m_damage_polys: Dictionary = {} ## Vector2i -> Polygon2D
 
@@ -26,9 +30,8 @@ func _ready() -> void:
 	_fill_tiles()
 
 
-func block_id_for_cell(_local_cell: Vector2i) -> StringName:
-	## 나중에 아틀라스/소스로 돌·흙 분기. MVP는 흙만.
-	return &"dirt"
+func block_id_for_cell(local_cell: Vector2i) -> StringName:
+	return m_cell_block_id.get(local_cell, &"dirt")
 
 
 func get_cell_hp(local_cell: Vector2i) -> int:
@@ -63,6 +66,8 @@ func _break_cell(local_cell: Vector2i) -> void:
 		m_tile_bodies.erase(local_cell)
 		body.queue_free()
 	_spawn_drop(local_cell)
+	m_cell_block_id.erase(local_cell)
+	m_cell_max_hp.erase(local_cell)
 
 
 func _spawn_drop(local_cell: Vector2i) -> void:
@@ -103,7 +108,7 @@ func _sync_damage_overlay(local_cell: Vector2i) -> void:
 		_remove_damage_overlay(local_cell)
 		return
 	var hp: int = int(m_cell_hp[local_cell])
-	var max_hp: int = block_table.get_max_hp(block_id_for_cell(local_cell))
+	var max_hp: int = int(m_cell_max_hp.get(local_cell, 1))
 	if max_hp <= 0:
 		return
 	if hp >= max_hp:
@@ -134,17 +139,19 @@ func _fill_tiles() -> void:
 		child.queue_free()
 	m_tile_bodies.clear()
 	m_cell_hp.clear()
+	m_cell_block_id.clear()
+	m_cell_max_hp.clear()
 
 	for x in range(WIDTH_TILES):
 		for y in range(HEIGHT_TILES):
 			var cell := Vector2i(x, y)
 			var global_ty := chunk_index_y * HEIGHT_TILES + y
-			var atlas := WorldGenerator.atlas_for_cell(x, global_ty)
-			m_tile_layer.set_cell(cell, 0, atlas)
+			var gen := WorldGenerator.evaluate_cell(x, global_ty)
+			m_tile_layer.set_cell(cell, gen.source_id, gen.atlas)
 
-			var bid := block_id_for_cell(cell)
-			var max_hp := block_table.get_max_hp(bid)
-			m_cell_hp[cell] = max_hp
+			m_cell_block_id[cell] = gen.block_id
+			m_cell_max_hp[cell] = gen.max_hp
+			m_cell_hp[cell] = gen.max_hp
 
 			# MVP용 충돌: 각 타일 셀을 고정 사각형(32x32)으로 막아 이동이 타일에 걸리는지 확인
 			var body := StaticBody2D.new()

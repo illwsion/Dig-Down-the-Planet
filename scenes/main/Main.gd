@@ -23,6 +23,7 @@ var m_max_depth_m: float = 0.0
 @onready var m_fuel_bar: ProgressBar = $UILayer/FuelPanel/FuelBar
 @onready var m_fuel_label: Label = $UILayer/FuelPanel/FuelLabel
 @onready var m_return_button: Button = $UILayer/ReturnButton
+@onready var m_tile_hp_debug_check: CheckBox = $UILayer/DebugPanel/TileHpDebugCheck
 
 var m_run_inventory_label: Label
 var m_run_ended: bool = false
@@ -36,6 +37,8 @@ func _ready() -> void:
 	m_drill.move_speed = m_move_speed_px
 	m_return_button.pressed.connect(_on_return_button_pressed)
 	m_drill.run_end_fuel_depleted.connect(_on_run_end_fuel_depleted)
+	m_tile_hp_debug_check.toggled.connect(_on_tile_hp_debug_toggled)
+	m_tile_hp_debug_check.button_pressed = m_drill.debug_show_tile_hp
 
 	m_run_inventory_label = Label.new()
 	m_run_inventory_label.anchor_left   = 1.0
@@ -73,6 +76,7 @@ func _request_run_end(reason: StringName) -> void:
 	m_run_ended = true
 	m_drill.set_input_locked(true)
 	m_speed_slider.editable = false
+	m_tile_hp_debug_check.disabled = true
 	m_return_button.disabled = true
 	run_end_requested.emit(reason)
 
@@ -80,6 +84,10 @@ func _request_run_end(reason: StringName) -> void:
 func _on_speed_slider_changed(value: float) -> void:
 	m_move_speed_px = value
 	m_speed_value_label.text = "%d px/s" % int(round(value))
+
+
+func _on_tile_hp_debug_toggled(enabled: bool) -> void:
+	m_drill.debug_show_tile_hp = enabled
 
 
 func _update_hud() -> void:

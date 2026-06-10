@@ -16,10 +16,12 @@ var move_speed: float = 400.0
 
 ## 채굴: 접두 `mine_*` (MVP_DEVELOPMENT_PLAN.md 표와 동일). 기준점 = [method get_tip_global_position].
 @export var debug_draw_mine_radii: bool = true
+## true 이면 활성 Chunk 타일 위에 현재 HP 숫자 표시.
+@export var debug_show_tile_hp: bool = false
 @export var mine_radius: float = 50.0
 @export var mine_contact_radius: float = 10.0
 @export_range(0.05, 10.0, 0.01) var mine_tick_interval: float = 1.0
-@export var mine_damage_per_tick: float = 1.0
+@export var mine_damage_per_tick: float = 2.0
 
 ## 이동: 접두 `move_*` — 가속은 연료/채굴 로직과 함께 적용 예정.
 @export var move_speed_max: float = 400.0

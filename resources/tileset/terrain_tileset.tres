@@ -1,6 +1,7 @@
 [gd_resource type="TileSet" format=3 uid="uid://sah4b0vborau"]
 
 [ext_resource type="Texture2D" uid="uid://c4tuh7jljtw3i" path="res://assets/tiles/tile_dirt.png" id="1_dirt"]
+[ext_resource type="Texture2D" uid="uid://b1c1100t2gijj" path="res://assets/tiles/tile_rock.png" id="2_rock"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_dirt"]
 texture = ExtResource("1_dirt")
@@ -22,6 +23,27 @@ texture_region_size = Vector2i(32, 32)
 2:3/0 = 0
 3:3/0 = 0
 
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_stone"]
+texture = ExtResource("2_rock")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+3:0/0 = 0
+0:1/0 = 0
+1:1/0 = 0
+2:1/0 = 0
+3:1/0 = 0
+0:2/0 = 0
+1:2/0 = 0
+2:2/0 = 0
+3:2/0 = 0
+0:3/0 = 0
+1:3/0 = 0
+2:3/0 = 0
+3:3/0 = 0
+
 [resource]
 tile_size = Vector2i(32, 32)
 sources/0 = SubResource("TileSetAtlasSource_dirt")
+sources/1 = SubResource("TileSetAtlasSource_stone")

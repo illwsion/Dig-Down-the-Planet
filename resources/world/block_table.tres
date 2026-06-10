@@ -7,6 +7,13 @@
 script = ExtResource("2_bd")
 drop_item_id = &"dirt"
 
+[sub_resource type="Resource" id="BlockDef_stone"]
+script = ExtResource("2_bd")
+id = &"stone"
+display_name = "돌"
+max_hp = 10
+drop_item_id = &"stone"
+
 [resource]
 script = ExtResource("1_bt")
-blocks = Array[ExtResource("2_bd")]([SubResource("BlockDef_dirt")])
+blocks = Array[ExtResource("2_bd")]([SubResource("BlockDef_dirt"), SubResource("BlockDef_stone")])
