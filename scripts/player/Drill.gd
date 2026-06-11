@@ -18,6 +18,11 @@ var move_speed: float = 400.0
 @export var debug_draw_mine_radii: bool = true
 ## true 이면 활성 Chunk 타일 위에 현재 HP 숫자 표시.
 @export var debug_show_tile_hp: bool = false
+## true 이면 채굴 틱마다 연료를 소모하지 않음.
+@export var debug_infinite_fuel: bool = false
+## true 이면 틱당 채굴 대미지에 [constant DEBUG_MINE_DAMAGE_BONUS] 추가.
+@export var debug_super_mine_damage: bool = false
+const DEBUG_MINE_DAMAGE_BONUS := 100000.0
 @export var mine_radius: float = 50.0
 @export var mine_contact_radius: float = 10.0
 @export_range(0.05, 10.0, 0.01) var mine_tick_interval: float = 1.0
@@ -188,11 +193,20 @@ func _get_fuel_cost_parts() -> Dictionary:
 	}
 
 
+func _get_mine_damage_for_tick() -> float:
+	var dmg: float = StatSystem.get_final(&"mine_damage_per_tick")
+	if debug_super_mine_damage:
+		dmg += DEBUG_MINE_DAMAGE_BONUS
+	return dmg
+
+
 func _process_mining_tick(delta: float) -> void:
 	if drill_status == DrillStatus.IDLE:
 		m_mine_tick_accum = 0.0
 		return
-	if m_fuel_depleted_emitted or fuel <= 0.0:
+	if m_fuel_depleted_emitted:
+		return
+	if not debug_infinite_fuel and fuel <= 0.0:
 		return
 	var world: Node = get_parent().get_node_or_null("World") if get_parent() else null
 	if world == null or not world.has_method("apply_mine_damage_at_world"):
@@ -203,18 +217,19 @@ func _process_mining_tick(delta: float) -> void:
 		if m_fuel_depleted_emitted:
 			break
 		m_mine_tick_accum -= tickInterval
-		var cost: float = _compute_fuel_cost_for_tick()
-		if fuel < cost:
-			fuel = 0.0
-			_emit_fuel_depleted()
-			break
-		fuel -= cost
+		if not debug_infinite_fuel:
+			var cost: float = _compute_fuel_cost_for_tick()
+			if fuel < cost:
+				fuel = 0.0
+				_emit_fuel_depleted()
+				break
+			fuel -= cost
 		world.apply_mine_damage_at_world(
 			get_tip_global_position(),
 			StatSystem.get_final(&"mine_radius"),
-			StatSystem.get_final(&"mine_damage_per_tick")
+			_get_mine_damage_for_tick()
 		)
-		if fuel <= 0.0:
+		if not debug_infinite_fuel and fuel <= 0.0:
 			fuel = 0.0
 			_emit_fuel_depleted()
 
@@ -260,9 +275,10 @@ func get_aim_debug_string() -> String:
 
 func get_mining_debug_string() -> String:
 	var t := get_tip_global_position()
-	return "tip:(%.0f,%.0f) mine_r:%.0f contact_r:%.0f tick:%.2fs dmg:%.1f\nm_mine_tick_accum: %.4f / %.2f" % [
-		t.x, t.y, mine_radius, mine_contact_radius, mine_tick_interval, mine_damage_per_tick,
-		m_mine_tick_accum, mine_tick_interval,
+	var tick_interval: float = StatSystem.get_final(&"mine_tick_interval")
+	return "tip:(%.0f,%.0f) mine_r:%.0f contact_r:%.0f tick:%.2fs dmg/틱:%.1f\nm_mine_tick_accum: %.4f / %.2f" % [
+		t.x, t.y, mine_radius, mine_contact_radius, tick_interval, _get_mine_damage_for_tick(),
+		m_mine_tick_accum, tick_interval,
 	]
 
 
@@ -271,6 +287,8 @@ func get_speed_debug_string() -> String:
 
 
 func get_fuel_cost_debug_string() -> String:
+	if debug_infinite_fuel:
+		return "연료소모/틱: (디버그 무한)"
 	var parts := _get_fuel_cost_parts()
 	return "연료소모/틱: (%.1f) + (%.1f) = (%.1f)" % [parts["base"], parts["depth"], parts["total"]]
 

@@ -10,8 +10,8 @@ drop_item_id = &"dirt"
 [sub_resource type="Resource" id="BlockDef_stone"]
 script = ExtResource("2_bd")
 id = &"stone"
-display_name = "돌"
 max_hp = 10
+display_name = "돌"
 drop_item_id = &"stone"
 
 [resource]

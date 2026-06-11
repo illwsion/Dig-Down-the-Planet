@@ -24,6 +24,8 @@ var m_max_depth_m: float = 0.0
 @onready var m_fuel_label: Label = $UILayer/FuelPanel/FuelLabel
 @onready var m_return_button: Button = $UILayer/ReturnButton
 @onready var m_tile_hp_debug_check: CheckBox = $UILayer/DebugPanel/TileHpDebugCheck
+@onready var m_infinite_fuel_debug_check: CheckBox = $UILayer/DebugPanel/InfiniteFuelDebugCheck
+@onready var m_super_mine_debug_check: CheckBox = $UILayer/DebugPanel/SuperMineDebugCheck
 
 var m_run_inventory_label: Label
 var m_run_ended: bool = false
@@ -39,6 +41,10 @@ func _ready() -> void:
 	m_drill.run_end_fuel_depleted.connect(_on_run_end_fuel_depleted)
 	m_tile_hp_debug_check.toggled.connect(_on_tile_hp_debug_toggled)
 	m_tile_hp_debug_check.button_pressed = m_drill.debug_show_tile_hp
+	m_infinite_fuel_debug_check.toggled.connect(_on_infinite_fuel_debug_toggled)
+	m_infinite_fuel_debug_check.button_pressed = m_drill.debug_infinite_fuel
+	m_super_mine_debug_check.toggled.connect(_on_super_mine_debug_toggled)
+	m_super_mine_debug_check.button_pressed = m_drill.debug_super_mine_damage
 
 	m_run_inventory_label = Label.new()
 	m_run_inventory_label.anchor_left   = 1.0
@@ -77,6 +83,8 @@ func _request_run_end(reason: StringName) -> void:
 	m_drill.set_input_locked(true)
 	m_speed_slider.editable = false
 	m_tile_hp_debug_check.disabled = true
+	m_infinite_fuel_debug_check.disabled = true
+	m_super_mine_debug_check.disabled = true
 	m_return_button.disabled = true
 	run_end_requested.emit(reason)
 
@@ -88,6 +96,14 @@ func _on_speed_slider_changed(value: float) -> void:
 
 func _on_tile_hp_debug_toggled(enabled: bool) -> void:
 	m_drill.debug_show_tile_hp = enabled
+
+
+func _on_infinite_fuel_debug_toggled(enabled: bool) -> void:
+	m_drill.debug_infinite_fuel = enabled
+
+
+func _on_super_mine_debug_toggled(enabled: bool) -> void:
+	m_drill.debug_super_mine_damage = enabled
 
 
 func _update_hud() -> void:
@@ -120,8 +136,11 @@ func _update_fuel_hud() -> void:
 	var fuel: float = m_drill.fuel
 	m_fuel_bar.max_value = fuel_max
 	m_fuel_bar.value = clampf(fuel, 0.0, fuel_max)
-	m_fuel_label.text = "%.1f / %.1f" % [fuel, fuel_max]
-	if fuel <= 0.0 and not m_run_ended:
+	if m_drill.debug_infinite_fuel:
+		m_fuel_label.text = "%.1f / %.1f (∞)" % [fuel, fuel_max]
+	else:
+		m_fuel_label.text = "%.1f / %.1f" % [fuel, fuel_max]
+	if not m_drill.debug_infinite_fuel and fuel <= 0.0 and not m_run_ended:
 		_on_run_end_fuel_depleted()
 
 
