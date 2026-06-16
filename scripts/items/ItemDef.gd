@@ -9,7 +9,7 @@ var id: StringName = &""
 var display_name: String = ""
 
 ## 인벤토리 슬롯 및 DropItem 스프라이트에 사용할 아이콘.
-## 우선 공용 플레이스홀더를 사용. 추후 아이템별 스프라이트로 교체 예정.
+## ItemIcons에 매핑된 아이템은 item.png 시트에서, 나머지는 플레이스홀더.
 var icon: Texture2D = preload("res://assets/sprites/image_32.png")
 
 ## 추후 상점에서 달러로 환산할 기준 가격.

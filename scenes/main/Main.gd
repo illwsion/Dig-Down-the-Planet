@@ -14,6 +14,7 @@ var m_max_depth_m: float = 0.0
 
 @onready var m_drill: CharacterBody2D = $Drill
 @onready var m_world: Node2D = $World
+@onready var m_vision_overlay: Node = $VisionLayer/DarknessMask
 @onready var m_depth_label: Label = $UILayer/DepthLabel
 @onready var m_chunks_label: Label = $UILayer/ChunksLabel
 @onready var m_fps_label: Label = $UILayer/FpsLabel
@@ -63,7 +64,19 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not m_run_ended:
 		m_drill.move_speed = m_move_speed_px
+	_update_vision_overlay()
 	_update_hud()
+
+
+func _update_vision_overlay() -> void:
+	if m_vision_overlay == null:
+		return
+	if m_vision_overlay.has_method("set_vision_radius"):
+		m_vision_overlay.call("set_vision_radius", StatSystem.get_final(&"vision_radius"))
+	if m_vision_overlay.has_method("set_darkness_alpha"):
+		m_vision_overlay.call("set_darkness_alpha", StatSystem.get_final(&"vision_darkness_alpha"))
+	if m_vision_overlay.has_method("set_center_screen_pos"):
+		m_vision_overlay.call("set_center_screen_pos", get_viewport_rect().size * 0.5)
 
 
 func _on_return_button_pressed() -> void:

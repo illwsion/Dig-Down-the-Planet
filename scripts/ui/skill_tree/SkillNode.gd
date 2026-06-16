@@ -21,6 +21,8 @@ func setup(_tooltip: Node) -> void:
 	if m_skill_def == null:
 		push_error("SkillNode: skill_id를 찾을 수 없음 — %s" % m_skill_id)
 		return
+	if m_skill_def.icon != null:
+		texture_normal = m_skill_def.icon
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	pressed.connect(_on_pressed)

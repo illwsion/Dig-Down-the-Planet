@@ -47,6 +47,18 @@ const DEBUG_MINE_DAMAGE_BONUS := 100000.0
 @export var fuel_max: float = 10.0
 @export var fuel_cost_per_mine_tick: float = 2.0
 
+## 시야: 접두 `vision_*`. Main의 어둠 오버레이와 스킬 성장에서 참조한다.
+@export var vision_radius: float = 144.0
+@export_range(0.0, 1.0, 0.01) var vision_darkness_alpha: float = 0.94
+
+## 카메라: mine_radius가 커질수록 화면을 조금씩 넓게 보여준다.
+@export var camera_zoom_base: float = 1.45
+@export var camera_zoom_min: float = 1.05
+@export var camera_zoom_reference_mine_radius: float = 50.0
+@export var camera_zoom_mine_radius_step: float = 25.0
+@export var camera_zoom_per_step: float = 0.04
+@export var camera_zoom_smooth_speed: float = 6.0
+
 ## 현재 연료. `_ready`에서 `StatSystem.get_final(&"fuel_max")`로 초기화.
 var fuel: float = 0.0
 
@@ -107,6 +119,7 @@ func _ready() -> void:
 	m_collision_shape.shape = poly
 	_register_stats()
 	fuel = StatSystem.get_final(&"fuel_max")
+	m_camera.zoom = Vector2.ONE * camera_zoom_base
 	_sync_rotation_from_aim()
 
 
@@ -121,10 +134,20 @@ func _register_stats() -> void:
 	StatSystem.register_base(&"aim_turn_max_deg_per_sec", aim_turn_max_deg_per_sec)
 	StatSystem.register_base(&"fuel_max",                 fuel_max)
 	StatSystem.register_base(&"fuel_cost_per_mine_tick",  fuel_cost_per_mine_tick)
+	StatSystem.register_base(&"vision_radius",            vision_radius)
+	StatSystem.register_base(&"vision_darkness_alpha",    vision_darkness_alpha)
 
 
 func set_input_locked(_locked: bool) -> void:
 	m_input_locked = _locked
+
+
+func _get_target_camera_zoom() -> float:
+	var final_mine_radius: float = StatSystem.get_final(&"mine_radius")
+	var extra_radius := maxf(final_mine_radius - camera_zoom_reference_mine_radius, 0.0)
+	var steps := extra_radius / maxf(camera_zoom_mine_radius_step, 0.001)
+	var target_zoom := camera_zoom_base - steps * camera_zoom_per_step
+	return maxf(target_zoom, camera_zoom_min)
 
 
 func _physics_process(delta: float) -> void:
@@ -155,8 +178,17 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	_sync_rotation_from_aim()
+	_update_camera_zoom(delta)
 	_update_dig_sprite_fx(delta)
 	_process_mining_tick(delta)
+
+
+func _update_camera_zoom(delta: float) -> void:
+	if m_camera == null:
+		return
+	var target_zoom := Vector2.ONE * _get_target_camera_zoom()
+	var weight := 1.0 - exp(-camera_zoom_smooth_speed * delta)
+	m_camera.zoom = m_camera.zoom.lerp(target_zoom, weight)
 
 
 func _update_dig_sprite_fx(delta: float) -> void:

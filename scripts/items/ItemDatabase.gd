@@ -13,14 +13,6 @@ extends Node
 
 const c_CsvPath := "res://resources/items/item_database.csv"
 
-## item_id → AtlasTexture (.tres). 시트에 아이콘이 없는 아이템은 기본 플레이스홀더 사용.
-const c_Icons: Dictionary = {
-	&"dirt":        preload("res://resources/items/item_dirt.tres"),
-	&"dirt_brick":  preload("res://resources/items/item_dirt_brick.tres"),
-	&"stone":       preload("res://resources/items/item_stone.tres"),
-	&"stone_brick": preload("res://resources/items/item_stone_brick.tres"),
-}
-
 ## { item_id: StringName -> ItemDef }
 var _defs: Dictionary = {}
 
@@ -54,8 +46,9 @@ func _load_csv() -> void:
 		def.display_name = row[1].strip_edges()
 		def.sell_price   = int(row[2].strip_edges())
 		def.category     = StringName(row[3].strip_edges())
-		if c_Icons.has(def.id):
-			def.icon = c_Icons[def.id]
+		var icon: Texture2D = ItemIcons.get_icon(def.id)
+		if icon != null:
+			def.icon = icon
 		_defs[def.id]    = def
 
 	print("ItemDatabase: %d개 아이템 로드 완료" % _defs.size())

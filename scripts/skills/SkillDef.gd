@@ -6,6 +6,10 @@ extends Resource
 ## 위치·연결 관계(prerequisites, position)는 skill_tree.tscn의 SkillNode가 담당한다.
 
 var id: StringName
+
+## icon_skill.png 시트 조회용. 비어 있으면 id와 동일하게 취급한다.
+var icon_id: StringName = &""
+
 var display_name: String
 var description: String
 var max_level: int
@@ -17,3 +21,6 @@ var cost_per_level: Array[SkillCost] = []
 
 ## 이 스킬이 적용하는 스탯 효과 목록.
 var effects: Array[SkillEffect] = []
+
+## 스킬트리 노드 버튼에 사용할 아이콘. SkillIcons가 icon_id로 채운다.
+var icon: Texture2D = preload("res://icon.svg")

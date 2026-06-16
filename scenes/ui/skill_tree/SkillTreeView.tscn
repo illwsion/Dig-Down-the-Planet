@@ -74,23 +74,53 @@ texture_normal = ExtResource("4_5t7pt")
 m_skill_id = &"inventory_slot_maxstack"
 m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillSpeed")])
 
-[node name="SkillNode_FuelMax" parent="Canvas/NodesLayer" unique_id=2085713802 instance=ExtResource("4_skillnode")]
+[node name="SkillNode_FuelCost" parent="Canvas/NodesLayer" unique_id=2010880214 instance=ExtResource("4_skillnode")]
 layout_mode = 0
 offset_left = 200.0
 offset_right = 264.0
 offset_bottom = 64.0
 texture_normal = ExtResource("4_0tmdg")
-m_skill_id = &"fuel_max"
+m_skill_id = &"fuel_cost"
 m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillDamage")])
 
-[node name="SkillNode_FuelCost" parent="Canvas/NodesLayer" unique_id=2010880214 instance=ExtResource("4_skillnode")]
+[node name="SkillNode_FuelMax" parent="Canvas/NodesLayer" unique_id=2085713802 instance=ExtResource("4_skillnode")]
 layout_mode = 0
 offset_left = 300.0
 offset_right = 364.0
 offset_bottom = 64.0
 texture_normal = ExtResource("4_0tmdg")
-m_skill_id = &"fuel_cost"
-m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_FuelMax")])
+m_skill_id = &"fuel_max"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_FuelCost")])
+
+[node name="SkillNode_DrillAcceleration" parent="Canvas/NodesLayer" instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 200.0
+offset_right = 164.0
+offset_bottom = 264.0
+texture_normal = ExtResource("4_5t7pt")
+m_skill_id = &"drill_acceleration"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillSpeed")])
+
+[node name="SkillNode_DrillTurnSpeed" parent="Canvas/NodesLayer" instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_left = -100.0
+offset_top = 200.0
+offset_right = -36.0
+offset_bottom = 264.0
+texture_normal = ExtResource("4_5t7pt")
+m_skill_id = &"drill_turn_speed"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillSpeed")])
+
+[node name="SkillNode_VisionLampRange" parent="Canvas/NodesLayer" instance=ExtResource("4_skillnode")]
+layout_mode = 0
+offset_left = -200.0
+offset_top = 200.0
+offset_right = -136.0
+offset_bottom = 264.0
+texture_normal = ExtResource("4_0tmdg")
+m_skill_id = &"vision_lamp_range"
+m_prerequisite_nodes = Array[NodePath]([NodePath("../SkillNode_DrillTurnSpeed")])
 
 [node name="Tooltip" parent="." unique_id=1328838739 instance=ExtResource("2_skilltooltip")]
 layout_mode = 0

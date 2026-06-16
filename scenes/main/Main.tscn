@@ -1,8 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://bqj8main0digplanet"]
+[gd_scene load_steps=7 format=3 uid="uid://bqj8main0digplanet"]
 
 [ext_resource type="Script" path="res://scenes/main/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/World.tscn" id="2_world"]
 [ext_resource type="PackedScene" path="res://scenes/player/Drill.tscn" id="3_drill"]
+[ext_resource type="Shader" path="res://resources/shaders/drill_vision_mask.gdshader" id="4_vision_shader"]
+[ext_resource type="Script" path="res://scripts/ui/vision/DrillVisionOverlay.gd" id="5_vision_overlay"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vision_mask"]
+shader = ExtResource("4_vision_shader")
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -12,7 +17,22 @@ position = Vector2(0, 0)
 
 [node name="World" parent="." instance=ExtResource("2_world")]
 
+[node name="VisionLayer" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="DarknessMask" type="ColorRect" parent="VisionLayer"]
+material = SubResource("ShaderMaterial_vision_mask")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.9)
+script = ExtResource("5_vision_overlay")
+
 [node name="UILayer" type="CanvasLayer" parent="."]
+layer = 2
 
 [node name="DepthLabel" type="Label" parent="UILayer"]
 offset_left = 12.0

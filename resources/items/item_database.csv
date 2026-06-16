@@ -1,10 +1,10 @@
 ﻿id,display_name,sell_price,category
 dirt,흙,1,raw
 stone,돌,2,raw
-copper,구리,5,raw
-iron,철,10,raw
-silver,은,30,raw
-gold,금,100,raw
+copper_ore,구리,5,raw
+iron_ore,철,10,raw
+silver_ore,은,30,raw
+gold_ore,금,100,raw
 dirt_brick,흙 벽돌,4,processed
 stone_brick,돌 벽돌,8,processed
 copper_ingot,구리 주괴,20,processed

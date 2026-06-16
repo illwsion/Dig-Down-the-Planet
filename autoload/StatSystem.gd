@@ -54,6 +54,8 @@ func _ready() -> void:
 		&"aim_turn_max_deg_per_sec": 54.0,
 		&"fuel_max":                 10.0,
 		&"fuel_cost_per_mine_tick":  2.0,
+		&"vision_radius":            144.0,
+		&"vision_darkness_alpha":    0.94,
 		&"inventory_slot_count":     4.0,
 		&"inventory_max_stack":      3.0,
 	}

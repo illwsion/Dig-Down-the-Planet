@@ -13,11 +13,14 @@ block_table = ExtResource("3_block_table")
 z_index = 0
 tile_set = ExtResource("2_tileset")
 
-[node name="DamageOverlay" type="Node2D" parent="."]
+[node name="OreOverlay" type="Node2D" parent="."]
 z_index = 1
 
-[node name="HpDebugOverlay" type="Node2D" parent="."]
+[node name="DamageOverlay" type="Node2D" parent="."]
 z_index = 2
+
+[node name="HpDebugOverlay" type="Node2D" parent="."]
+z_index = 3
 script = ExtResource("4_hp_dbg")
 
 [node name="Colliders" type="Node2D" parent="."]

@@ -14,6 +14,7 @@
 | `drill_speed` | 드릴 속도 업그레이드 | 최대 속도를 높인다 | 3 | `move_speed_max` | +2 |
 | `inventory_slot_addslot` | 인벤토리 슬롯 추가 | 인벤토리 슬롯을 늘린다 | 3 | `inventory_slot_count` | +1 |
 | `inventory_slot_maxstack` | 인벤토리 슬롯 강화 | 슬롯당 아이템 보유량을 늘린다 | 3 | `inventory_max_stack` | +1 |
+| `vision_lamp_range` | 램프 범위 강화 | 드릴 주변의 시야 반경을 넓힌다 | 5 | `vision_radius` | +40 |
 
 ---
 
@@ -33,6 +34,8 @@
 | `aim_turn_max_deg_per_sec` | 최대 조준 회전 속도 (도/초) | 54.0 |
 | `fuel_max` | 최대 연료량 | 100.0 |
 | `fuel_drain_per_second` | 초당 연료 소모량 | 5.0 |
+| `vision_radius` | 선명하게 보이는 시야 반경 (px) | 144.0 |
+| `vision_darkness_alpha` | 시야 바깥 어둠 강도 | 0.94 |
 
 ---
 
@@ -43,7 +46,9 @@ drill_basic
 ├── drill_damage
 └── drill_speed
       ├── inventory_slot_addslot
-      └── inventory_slot_maxstack
+      ├── inventory_slot_maxstack
+      └── drill_turn_speed
+            └── vision_lamp_range
 ```
 
 연결 관계(선행 스킬)와 위치는 `scenes/ui/skill_tree/SkillTreeView.tscn`의 각 SkillNode Inspector에서 확인·수정한다.
