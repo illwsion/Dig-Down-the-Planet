@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://bqj8main0digplanet"]
+[gd_scene load_steps=8 format=3 uid="uid://bqj8main0digplanet"]
 
 [ext_resource type="Script" path="res://scenes/main/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/World.tscn" id="2_world"]
 [ext_resource type="PackedScene" path="res://scenes/player/Drill.tscn" id="3_drill"]
 [ext_resource type="Shader" path="res://resources/shaders/drill_vision_mask.gdshader" id="4_vision_shader"]
 [ext_resource type="Script" path="res://scripts/ui/vision/DrillVisionOverlay.gd" id="5_vision_overlay"]
+[ext_resource type="PackedScene" path="res://scenes/ui/RunInventoryPanel.tscn" id="6_run_inventory_panel"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vision_mask"]
 shader = ExtResource("4_vision_shader")
@@ -125,6 +126,20 @@ layout_mode = 2
 text = "400 px/s"
 horizontal_alignment = 2
 theme_override_font_sizes/font_size = 14
+
+[node name="RunInventoryPanel" parent="UILayer" instance=ExtResource("6_run_inventory_panel")]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -276.0
+offset_top = -116.0
+offset_right = -72.0
+offset_bottom = 116.0
+grow_horizontal = 0
+grow_vertical = 2
 
 [node name="DebugPanel" type="VBoxContainer" parent="UILayer"]
 layout_mode = 1

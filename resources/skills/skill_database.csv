@@ -2,7 +2,7 @@ id,icon_id,display_name,description,max_level,dollar_cost_base,dollar_cost_growt
 drill_basic,drill,드릴 기본,드릴을 처음 얻는다.,1,0,0,,0,0,,,,,,
 drill_damage,drill_power,드릴 세기 업그레이드,드릴의 채굴 대미지를 높인다.,3,1,1,,0,0,mine_damage_per_tick,1,,,,
 drill_speed,drill_move,드릴 속도 업그레이드,드릴의 최대 속도를 높인다.,3,1,1,,0,0,move_speed_max,2,,,,
-inventory_slot_addslot,inventory_add,인벤토리 슬롯 추가,인벤토리 슬롯을 늘린다,3,0,0,,0,0,inventory_slot_count,1,,,,
+inventory_slot_addslot,inventory_add,인벤토리 슬롯 추가,인벤토리 슬롯을 늘린다,12,0,0,,0,0,inventory_slot_count,1,,,,
 inventory_slot_maxstack,inventory_stack,인벤토리 슬롯 강화,인벤토리 슬롯당 아이템 보유량을 늘린다,3,0,0,,0,0,inventory_max_stack,1,,,,
 fuel_max,fuel_max,연료 최대치 증가,연료의 최대치를 늘린다.,5,0,0,,0,0,fuel_max,2,,,,
 fuel_cost,fuel_cost,연료 소모 감소,연료의 틱당 소모량을 감소시킨다,5,0,0,,0,0,fuel_cost_per_mine_tick,-0.1,,,,

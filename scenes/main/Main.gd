@@ -27,8 +27,8 @@ var m_max_depth_m: float = 0.0
 @onready var m_tile_hp_debug_check: CheckBox = $UILayer/DebugPanel/TileHpDebugCheck
 @onready var m_infinite_fuel_debug_check: CheckBox = $UILayer/DebugPanel/InfiniteFuelDebugCheck
 @onready var m_super_mine_debug_check: CheckBox = $UILayer/DebugPanel/SuperMineDebugCheck
+@onready var m_run_inventory_panel: RunInventoryPanel = $UILayer/RunInventoryPanel
 
-var m_run_inventory_label: Label
 var m_run_ended: bool = false
 
 
@@ -46,17 +46,6 @@ func _ready() -> void:
 	m_infinite_fuel_debug_check.button_pressed = m_drill.debug_infinite_fuel
 	m_super_mine_debug_check.toggled.connect(_on_super_mine_debug_toggled)
 	m_super_mine_debug_check.button_pressed = m_drill.debug_super_mine_damage
-
-	m_run_inventory_label = Label.new()
-	m_run_inventory_label.anchor_left   = 1.0
-	m_run_inventory_label.anchor_right  = 1.0
-	m_run_inventory_label.anchor_top    = 0.5
-	m_run_inventory_label.anchor_bottom = 0.5
-	m_run_inventory_label.offset_left   = -220
-	m_run_inventory_label.offset_right  = -16
-	m_run_inventory_label.offset_top    = -80
-	m_run_inventory_label.offset_bottom = 80
-	$UILayer.add_child(m_run_inventory_label)
 
 	_update_hud()
 
@@ -141,7 +130,7 @@ func _update_hud() -> void:
 		m_aim_label.text = "\n".join(parts)
 
 	_update_fuel_hud()
-	m_run_inventory_label.text = _format_run_inventory()
+	m_run_inventory_panel.refresh(GameState.run_inventory, GameState.run_display)
 
 
 func _update_fuel_hud() -> void:
@@ -155,28 +144,6 @@ func _update_fuel_hud() -> void:
 		m_fuel_label.text = "%.1f / %.1f" % [fuel, fuel_max]
 	if not m_drill.debug_infinite_fuel and fuel <= 0.0 and not m_run_ended:
 		_on_run_end_fuel_depleted()
-
-
-func _format_run_inventory() -> String:
-	var inv: RunInventory = GameState.run_inventory
-	var display: Dictionary = GameState.run_display
-	var lines: Array[String] = []
-	lines.append("[ 배낭 %d/%d슬롯 ]" % [_count_used_slots(inv), inv.slot_count])
-	for item_id in display:
-		var def: ItemDef = ItemDatabase.get_def(item_id)
-		var label: String = def.display_name if def != null else str(item_id)
-		lines.append("  %s × %d" % [label, display[item_id]])
-	if lines.size() == 1:
-		lines.append("  (비어 있음)")
-	return "\n".join(lines)
-
-
-func _count_used_slots(_inv: RunInventory) -> int:
-	var count: int = 0
-	for slot in _inv.slots:
-		if slot["item_id"] != &"":
-			count += 1
-	return count
 
 
 func get_max_depth_m() -> float:
